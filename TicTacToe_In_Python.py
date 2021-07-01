@@ -46,8 +46,10 @@ def main():
 
     # Play the first turn of the game, asking for input of coordinates
     playGame(whichturn, sizeOfBoard, board_data)
+    turn_counter = 0
 
     while True:
+        turn_counter += 1
         # Loop through the game, deciding who is next based on who came before
         if whichturn == GAME_VALS['X']:
             # X was first, now make O turn
@@ -58,15 +60,17 @@ def main():
             whichturn = GAME_VALS['X']
             
         row_played, col_played = playGame(whichturn, sizeOfBoard, board_data)
-        isWinner = checkWin(row_played, col_played, sizeOfBoard, board_data)
+        
+        if turn_counter >= (2 * sizeOfBoard) - 1:
+            isWinner = checkWin(row_played, col_played, sizeOfBoard, board_data)
 
-        if isWinner:
-            if whichturn == GAME_VALS['X']:
-                print("Congratulations, X won!")
-                break
-            else:
-                print("Congratulations, O won!")
-                break
+            if isWinner:
+                if whichturn == GAME_VALS['X']:
+                    print("Congratulations, X won!")
+                    break
+                else:
+                    print("Congratulations, O won!")
+                    break
 
 def createGameLocs(boardSize):
     """
@@ -74,7 +78,7 @@ def createGameLocs(boardSize):
 
     Input: boardSize(int)
 
-    Output: Dict{key = tuple of coordinates : value = '_', representing EMPTY}
+    Output: Dict {key = tuple of coordinates : value = '_', representing EMPTY}
     """
     start_board_data = {}
     for rows in range(1, boardSize+1):
