@@ -2,17 +2,24 @@ from time import time
 from tkinter import messagebox
 
 import tkinter as tk
+from tkinter.font import BOLD
 
 """
 Play TicTacToe!
-This script allows you to play any size grid of TicTacToe with another person, in the console.
+This script allows you to play any size grid of TicTacToe with another person, now in a GUI!
 Have fun!
 """
 
 GAME_VALS = {
-    'X': 'X',
-    'EMPTY': '_',
-    'O': 'O'
+    'X': 1,
+    'EMPTY': 0,
+    'O': -1
+}
+
+COLORS = {
+    "WindowBackground": "#7DB46C",
+    "ButtonBackground": "#E7EBE0",
+    "LabelBackground": "#ABD6DF"
 }
 
 MAX_BOARD_SIZE = 10
@@ -23,6 +30,11 @@ class TicTacToeWindow:
     def __init__(self, root):
         self.root = root
         self.root.title("TicTacToe!")
+        self.startScreen()
+        self.ORIGINAL_BACKGROUND = self.root.cget("background")
+    
+    def startScreen(self):
+        
         self.window = tk.Label(self.root, text="Play TicTacToe!", font=("Helvetica", 20))
         self.window.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
         
@@ -35,32 +47,254 @@ class TicTacToeWindow:
         self.size_capture = tk.Button(self.root, width=25, text="Let's Play!", font=("Helvetica", 10), command=self.getSizeOfBoard)
         self.size_capture.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
         
+        self.root.bind('<Return>', self.getSizeOfBoard)
+        self.size_input.focus()
         
-    def getSizeOfBoard(self):
-        """Get the user to provide the size of the board they want to play. Max size = MAX_BOARD_SIZE
+    def getSizeOfBoard(self, event=None):
+        """
+        Get the user to provide the size of the board they want to play. Max size = MAX_BOARD_SIZE
         Inputs: N/A
         Outputs: 
             sizeOfBoard (int) = Length of one side of the TicTacToe board they wish to play on
         """
+        SIZE_ERROR_MESSAGE = f"Please enter a valid positive size, max size {MAX_BOARD_SIZE}, min size 3."
         if not self.size_input.get().isdigit():
-            messagebox.showerror("Error",f"Please enter a valid positive size, max size {MAX_BOARD_SIZE},\nand greater than 0.")
+            messagebox.showerror("Error", SIZE_ERROR_MESSAGE)
             return
         
         self.sizeOfBoard = self.size_input.get()
         try:
-            if 0 < int(self.sizeOfBoard) <= MAX_BOARD_SIZE:
-                # Number is positive and greater than zero, less than/inclusive of max board size.
-                return int(self.sizeOfBoard)
+            if 3 <= int(self.sizeOfBoard) <= MAX_BOARD_SIZE:
+                # Number is positive and greater than/equal to three, less than/inclusive of max board size.
+                self.makeGameBoard(int(self.sizeOfBoard))
             
             else:
-                messagebox.showerror("Error",f"Please enter a valid positive size, max size {MAX_BOARD_SIZE},\nand greater than 0.")
+                messagebox.showerror("Error", SIZE_ERROR_MESSAGE)
                 return
             
         except ValueError:
-            messagebox.showerror("Error",f"Please enter a valid positive size, max size {MAX_BOARD_SIZE},\nand greater than 0.")
+            messagebox.showerror("Error", SIZE_ERROR_MESSAGE)
             return
-                
+           
+    def makeGameBoard(self, size_of_board):
+        """
+        [Create a square set of buttons with side length equal to the user input of size.]
 
+        Args:
+            size_of_board ([int]): [Length of one side of square of TicTacToe]
+        """
+        self.root.unbind('<Return>')
+        self.root.configure(bg=COLORS["WindowBackground"])
+         
+        self.game_data = {}
+        
+         # First clear the board
+        self.destroyRootWidgets()
+        
+        if size_of_board > 7:
+            self.BUTTON_HEIGHT = 75
+            self.BUTTON_WIDTH = 75
+        else:
+            self.BUTTON_HEIGHT = 100
+            self.BUTTON_WIDTH = 100
+        
+        self.game_data = TicTacToeGame(size_of_board)
+        self.gui_game_data = {}
+        
+        # Next, loop through and create a square of buttons
+        for height in range(size_of_board):
+            self.row = height
+            for width in range(size_of_board):
+                self.column = width
+                
+                self.tictactoe_button_frame = tk.Frame(self.root, height=self.BUTTON_HEIGHT, width=self.BUTTON_WIDTH)
+                
+                self.tictactoe_button = tk.Button(self.tictactoe_button_frame, text="+", font=("Helvetica", 30, BOLD),\
+                                            state=tk.DISABLED, borderwidth=4, bg=COLORS["ButtonBackground"],\
+                                            command=lambda coords=(self.row, self.column): self.gameButtonPressed(coords))
+                self.tictactoe_button.grid(sticky="news")
+                
+                self.tictactoe_button_frame.grid(row=self.row, column=self.column, padx=5, pady=5)
+                self.tictactoe_button_frame.rowconfigure(0, weight=1)
+                self.tictactoe_button_frame.columnconfigure(0, weight=1)
+                self.tictactoe_button_frame.grid_propagate(0)
+                
+                self.gui_game_data[(self.row, self.column)] = (self.tictactoe_button)
+                self.game_data.addGameSpot((self.row, self.column))
+        
+        self.status_frame = tk.Frame(self.root, height=50)
+        self.status_frame.grid(row=(self.row + 1), columnspan=(self.column+1), padx=5, pady=5, sticky="news")
+        self.status_frame.rowconfigure(0, weight=1)
+        self.status_frame.columnconfigure(0, weight=1)
+        self.status_frame.grid_propagate(0)
+        
+        self.find_first_player_button = tk.Button(self.status_frame, text='Click to see who is first!',\
+                                            font=("Helvetica", 18, BOLD), borderwidth=3,\
+                                            command=self.whichPlayerFirst)
+        self.find_first_player_button.grid(sticky="news")
+    
+    def whichPlayerFirst(self):
+        """[Runs TicTacToeGame method that returns 1 for X turn, or -1 for O turn]
+        """        
+        [vals.config(state="normal") for keys, vals in self.gui_game_data.items()]
+        
+        self.find_first_player_button.destroy()
+        
+        self.game_data.findFirstPlayer()
+
+        self.status_label = tk.Label(self.status_frame, borderwidth=3, relief="groove", font=("Helvetica", 20, BOLD), bg=COLORS['LabelBackground'])
+        self.status_label.grid(row=0, sticky="news")
+        
+        self.updateTurn()
+        
+    def gameButtonPressed(self, coords):
+        """
+        [Determines which button was pressed, via lambda function tied to button that produces a tuple of coordinates for pressed button]
+        """
+        print(f"Row: {coords[0]}\nColumn: {coords[1]}")
+        self.gui_game_data[(coords[0], coords[1])].config(state='disabled')
+        self.game_data.updateGameSpot((coords[0], coords[1]))
+        self.game_data.updateTurnCount()
+        self.game_data.updateTurn()
+        
+        if not self.game_data.checkSpotsAvailable():
+            self.gameOver(GAME_VALS['EMPTY'])
+        else:
+            self.updateTurn()
+        
+    def updateTurn(self):
+        """Updates self.current_turn and self.current_turn_label with whoever's turn it is
+        """
+        self.current_turn = self.game_data.getTurn()
+        self.current_turn_label = [key for key, val in GAME_VALS.items() if val==self.current_turn][0]
+        
+        self.status_label['text'] = f"{self.current_turn_label}'s turn!"
+    
+    def gameOver(self, who_won):
+        """Updates the window with who won
+
+        Args:
+            who_won (integer): Refreshes board with whoever won
+
+        """
+        
+        if who_won == GAME_VALS["EMPTY"]:
+            winning_string = "Tie!"
+        elif who_won == GAME_VALS["X"]:
+            winning_string = "X won!"
+        else:
+            winning_string = "O won!"
+        
+        self.status_label['text'] = winning_string
+        
+        self.play_again = tk.Button(self.root, text="Play Again?", command=self.playAgain)
+        self.play_again.grid(row=(self.row + 2), columnspan = (self.column+1), padx=5, pady=5, sticky="news")
+    
+    def destroyRootWidgets(self):
+         # First clear the board
+        for widgets in self.root.winfo_children():
+            widgets.destroy()
+    
+    def playAgain(self):
+        self.destroyRootWidgets()
+        self.root["background"] = self.ORIGINAL_BACKGROUND
+        self.startScreen()
+        
+        
+class TicTacToeGame(object):
+    """[Manages the game data for TicTacToe]
+    """
+    def __init__(self, game_size):
+        """Constructor. Starts empty game data dictionary, and initializes turn count.
+        
+        Args:
+            game_size (integer): Assuming square board, length of one side of tictactoe board.
+        """
+        self.game_data = {}
+        self.turn_count = 0
+        self.game_size = game_size
+    
+    def addGameSpot(self, coordinate):
+        """[Appends spot to self.game_data dictionary with key being coordinates of new spot, and value being EMPTY game value]
+
+        Args:
+            coordinate ([tuple]): Coordinate of spot to add
+        """
+        self.game_data[coordinate] = GAME_VALS["EMPTY"]
+        
+    def updateGameSpot(self, coordinate):
+        """Updates the gamespot with either X's or O's spot
+
+        Args:
+            coordinate ([tuple]): Coordinate of spot to update
+        """
+        if self.turn == 1:
+            # Was X's turn, update with X's marker
+            self.game_data[coordinate] = GAME_VALS["X"]
+        else:
+            self.game_data[coordinate] = GAME_VALS["O"]
+    
+    def checkSpotsAvailable(self):
+        """Checks if cat's game or not
+        
+        Returns:
+            True (boolean): if spots available
+            False (boolean): if spots not available
+        """
+        print(self.game_size)
+        if self.turn_count >= self.game_size ** 2:
+            return False
+        else:
+            return True
+            
+       
+    def findFirstPlayer(self):
+        """Randomly get first player based on current time being even or odd.
+        """
+        if (round(time()) % 2) == 0:
+            print("X's turn!")
+            self.turn = GAME_VALS["X"]
+        else:
+            print("O's turn")
+            self.turn = GAME_VALS["O"]
+        
+    def updateTurnCount(self):
+        """Update the turn count for this instance
+        """
+        
+        self.turn_count += 1
+        print("Turn: ", self.turn_count)
+        print("Game size:", self.game_size)
+        
+    def updateTurn(self):
+        """Update whose turn it is
+        """
+        
+        if self.turn == GAME_VALS["X"]:
+            print("O's turn")
+            self.turn = GAME_VALS["O"]
+        else:
+            print("X's turn!")
+            self.turn = GAME_VALS["X"]
+    
+    def getTurn(self):
+        """Getter for self.turn.
+        
+        Returns:
+            self.turn (integer): 1 for X's turn, -1 for O's turn.
+        """
+        return self.turn
+    
+            
+# def getFirstPlayer():
+#     """ Randomly get first player based on current time being either even or odd """
+#     if (round(time()) % 2) == 0:
+#         print("X is first")
+#         return GAME_VALS['X']
+    
+#     else:
+#         print("O is first")
+#         return GAME_VALS['O']    
 # def main():
 #     """
 #     Take in an input from the user of the size of the board they want.
