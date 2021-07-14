@@ -37,17 +37,22 @@ class TicTacToeWindow:
     
     def startScreen(self):
         
-        self.window = tk.Label(self.root, text="Play TicTacToe!", font=("Helvetica", 20))
+        self.window = tk.Label(self.root, text="Let's Play TicTacToe!", font=("Helvetica", 35))
         self.window.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
         
-        self.size_input_label = tk.Label(self.root, text="Enter the size of the board you want to play: ", font=("Helvetica", 10))
+        self.size_input_label = tk.Label(self.root, text="Enter the width of the board you want to play: ", font=("Helvetica", 15))
         self.size_input_label.grid(row=1, column=0, padx=5, pady=5)
+        
+        self.size_input_help = tk.Label(self.root,\
+                                    text="""The width is equivalent to the amount of tiles on one side of the board.\nA typical TicTacToe board is 3 tiles wide.""",\
+                                    font=("Helvetica", 15), relief="ridge")
+        self.size_input_help.grid(row=2, columnspan=2, padx=5, pady=5)
         
         self.size_input = tk.Entry(self.root)
         self.size_input.grid(row=1, column=1, columnspan=2, padx=5, pady=5)
         
-        self.size_capture = tk.Button(self.root, width=25, text="Let's Play!", font=("Helvetica", 10), command=self.getSizeOfBoard)
-        self.size_capture.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
+        self.size_capture = tk.Button(self.root, width=25, text="Let's Play!", font=("Helvetica", 15), command=self.getSizeOfBoard)
+        self.size_capture.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
         
         self.root.bind('<Return>', self.getSizeOfBoard)
         self.size_input.focus()
@@ -80,7 +85,7 @@ class TicTacToeWindow:
            
     def makeGameBoard(self, size_of_board):
         """
-        [Create a square set of buttons with side length equal to the user input of size.]
+        Create a square set of buttons with side length equal to the user input of size.
 
         Args:
             size_of_board ([int]): [Length of one side of square of TicTacToe]
@@ -128,8 +133,8 @@ class TicTacToeWindow:
         self.status_frame.columnconfigure(0, weight=1)
         self.status_frame.grid_propagate(0)
         
-        self.find_first_player_button = tk.Button(self.status_frame, text='Roll to see if X or O is first!',\
-                                            font=("Helvetica", 18, BOLD), borderwidth=3,\
+        self.find_first_player_button = tk.Button(self.status_frame, text='Click to roll to see if X or O is first!',\
+                                            font=("Helvetica", 13, BOLD), borderwidth=3,\
                                             command=self.whichPlayerFirst)
         self.find_first_player_button.grid(sticky="news")
     
@@ -151,7 +156,6 @@ class TicTacToeWindow:
         """
         [Determines which button was pressed, via lambda function tied to button that produces a tuple of coordinates for pressed button]
         """
-        print(f"Row: {coords[0]}\nColumn: {coords[1]}")
         self.coordinates_of_button = (coords[0], coords[1])
         self.button_pressed = self.gui_game_data[self.coordinates_of_button]
         self.button_pressed.config(state='disabled')
