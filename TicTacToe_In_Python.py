@@ -19,7 +19,9 @@ GAME_VALS = {
 COLORS = {
     "WindowBackground": "#7DB46C",
     "ButtonBackground": "#E7EBE0",
-    "LabelBackground": "#ABD6DF"
+    "LabelBackground": "#ABD6DF",
+    "XBackground": "#6CA1B4",
+    "OBackground": "#B47F6C"
 }
 
 MAX_BOARD_SIZE = 10
@@ -85,8 +87,6 @@ class TicTacToeWindow:
         """
         self.root.unbind('<Return>')
         self.root.configure(bg=COLORS["WindowBackground"])
-         
-        self.game_data = {}
         
          # First clear the board
         self.destroyRootWidgets()
@@ -128,7 +128,7 @@ class TicTacToeWindow:
         self.status_frame.columnconfigure(0, weight=1)
         self.status_frame.grid_propagate(0)
         
-        self.find_first_player_button = tk.Button(self.status_frame, text='Click to see who is first!',\
+        self.find_first_player_button = tk.Button(self.status_frame, text='Roll to see if X or O is first!',\
                                             font=("Helvetica", 18, BOLD), borderwidth=3,\
                                             command=self.whichPlayerFirst)
         self.find_first_player_button.grid(sticky="news")
@@ -152,15 +152,28 @@ class TicTacToeWindow:
         [Determines which button was pressed, via lambda function tied to button that produces a tuple of coordinates for pressed button]
         """
         print(f"Row: {coords[0]}\nColumn: {coords[1]}")
-        self.gui_game_data[(coords[0], coords[1])].config(state='disabled')
-        self.game_data.updateGameSpot((coords[0], coords[1]))
-        self.game_data.updateTurnCount()
-        self.game_data.updateTurn()
+        self.coordinates_of_button = (coords[0], coords[1])
+        self.button_pressed = self.gui_game_data[self.coordinates_of_button]
+        self.button_pressed.config(state='disabled')
+        self.button_pressed['text'] = self.current_turn_label
         
-        if not self.game_data.checkSpotsAvailable():
-            self.gameOver(GAME_VALS['EMPTY'])
+        if self.current_turn == GAME_VALS['X']:
+            self.button_pressed['background'] = COLORS['XBackground']
         else:
-            self.updateTurn()
+            self.button_pressed['background'] = COLORS['OBackground'] 
+            
+        self.game_data.updateGameSpot(self.coordinates_of_button)
+        self.game_data.updateTurnCount()
+        
+        if self.game_data.checkForWin(self.coordinates_of_button):
+            self.gameOver()
+        else:
+            self.game_data.updateTurn()
+            
+            if not self.game_data.checkSpotsAvailable():
+                self.gameOver(GAME_VALS['EMPTY'])
+            else:
+                self.updateTurn()
         
     def updateTurn(self):
         """Updates self.current_turn and self.current_turn_label with whoever's turn it is
@@ -170,7 +183,7 @@ class TicTacToeWindow:
         
         self.status_label['text'] = f"{self.current_turn_label}'s turn!"
     
-    def gameOver(self, who_won):
+    def gameOver(self, who_won=None):
         """Updates the window with who won
 
         Args:
@@ -180,10 +193,8 @@ class TicTacToeWindow:
         
         if who_won == GAME_VALS["EMPTY"]:
             winning_string = "Tie!"
-        elif who_won == GAME_VALS["X"]:
-            winning_string = "X won!"
-        else:
-            winning_string = "O won!"
+        elif not who_won:
+            winning_string = f"{self.current_turn_label} won!"
         
         self.status_label['text'] = winning_string
         
@@ -214,25 +225,25 @@ class TicTacToeGame(object):
         self.turn_count = 0
         self.game_size = game_size
     
-    def addGameSpot(self, coordinate):
+    def addGameSpot(self, coordinates):
         """[Appends spot to self.game_data dictionary with key being coordinates of new spot, and value being EMPTY game value]
 
         Args:
-            coordinate ([tuple]): Coordinate of spot to add
+            coordinates ([tuple]): Coordinates of spot to add
         """
-        self.game_data[coordinate] = GAME_VALS["EMPTY"]
+        self.game_data[coordinates] = GAME_VALS["EMPTY"]
         
-    def updateGameSpot(self, coordinate):
+    def updateGameSpot(self, coordinates):
         """Updates the gamespot with either X's or O's spot
 
         Args:
-            coordinate ([tuple]): Coordinate of spot to update
+            coordinates ([tuple]): Coordinates of spot to update
         """
         if self.turn == 1:
             # Was X's turn, update with X's marker
-            self.game_data[coordinate] = GAME_VALS["X"]
+            self.game_data[coordinates] = GAME_VALS["X"]
         else:
-            self.game_data[coordinate] = GAME_VALS["O"]
+            self.game_data[coordinates] = GAME_VALS["O"]
     
     def checkSpotsAvailable(self):
         """Checks if cat's game or not
@@ -241,40 +252,30 @@ class TicTacToeGame(object):
             True (boolean): if spots available
             False (boolean): if spots not available
         """
-        print(self.game_size)
         if self.turn_count >= self.game_size ** 2:
             return False
         else:
             return True
-            
-       
+                 
     def findFirstPlayer(self):
         """Randomly get first player based on current time being even or odd.
         """
         if (round(time()) % 2) == 0:
-            print("X's turn!")
             self.turn = GAME_VALS["X"]
         else:
-            print("O's turn")
             self.turn = GAME_VALS["O"]
         
     def updateTurnCount(self):
         """Update the turn count for this instance
         """
-        
         self.turn_count += 1
-        print("Turn: ", self.turn_count)
-        print("Game size:", self.game_size)
         
     def updateTurn(self):
         """Update whose turn it is
         """
-        
         if self.turn == GAME_VALS["X"]:
-            print("O's turn")
             self.turn = GAME_VALS["O"]
         else:
-            print("X's turn!")
             self.turn = GAME_VALS["X"]
     
     def getTurn(self):
@@ -285,7 +286,69 @@ class TicTacToeGame(object):
         """
         return self.turn
     
+    def checkForWin(self, coordinates):
+        """Checks if one of the player's won!
+
+        Args:
+            coordinates (tuple): Tuple of coordinates of location player chose
             
+        Return:
+            True (boolean): If there was a win
+            False (boolean): If there as no win
+        """
+        
+        if self.turn_count < (2 * self.game_size) - 1:
+            return
+
+        else:
+        
+            rows_check = set()
+            col_check = set()
+            diag_check = set()
+            anti_diag_check = set()
+            
+            row = coordinates[0]
+            col = coordinates[1]
+            
+            is_diagonal = self.checkIfDiagonal(row, col)
+            
+            
+            for vals in range(self.game_size):
+                rows_check.add(self.game_data[row, vals])
+                col_check.add(self.game_data[vals, col])
+                
+                if is_diagonal:
+                    diag_check.add(self.game_data[vals, vals])
+                    anti_diag_check.add(self.game_data[vals, self.game_size-vals-1])
+                
+            if len(rows_check) == 1:
+                if self.turn in rows_check:
+                    return True
+            elif len(col_check) == 1:
+                if self.turn in col_check:
+                    return True
+            elif is_diagonal:
+                if len(diag_check) == 1:
+                    if self.turn in diag_check:
+                        return True
+                elif len(anti_diag_check) == 1:
+                    if self.turn in anti_diag_check:
+                        return True
+            else:
+                return False
+               
+    def checkIfDiagonal(self, row, col):
+        """Checks if the coordinate user chose lie on a diagonal
+
+        Args:
+            row (int): Row coordinate of user chosen spot
+            col (int): Column coordinate of user chosen spot
+        """
+        if (row == col) or (row + col == self.game_size - 1):
+            return True
+       
+    
+          
 # def getFirstPlayer():
 #     """ Randomly get first player based on current time being either even or odd """
 #     if (round(time()) % 2) == 0:
@@ -558,13 +621,13 @@ class TicTacToeGame(object):
     #     return False
 
 if __name__ == "__main__":
-    print(
-    """
-    You are playing TicTacToe!\n\
-    The goal is to fill a row, column, or diagonal with only your pieces!.\n\
-    If neither you nor your opponent can create a winning pattern, it's a cat's game!\n\
-    Note, please consider top left corner to be postion 1 x 1.
-    """)
+    # print(
+    # """
+    # You are playing TicTacToe!\n\
+    # The goal is to fill a row, column, or diagonal with only your pieces!.\n\
+    # If neither you nor your opponent can create a winning pattern, it's a cat's game!\n\
+    # Note, please consider top left corner to be postion 1 x 1.
+    # """)
     root = tk.Tk()
     TicTacToeWindow(root)
     
