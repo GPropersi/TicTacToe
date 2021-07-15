@@ -18,7 +18,7 @@ GAME_VALS = {
 
 COLORS = {
     "WindowBackground": "#7DB46C",
-    "ButtonBackground": "#E7EBE0",
+    "ButtonBackground": "#9FA49E",
     "LabelBackground": "#ABD6DF",
     "XBackground": "#6CA1B4",
     "OBackground": "#B47F6C"
@@ -30,13 +30,20 @@ class TicTacToeWindow:
     """Window to play TicTacToe on!
     """
     def __init__(self, root):
+        """Constructor for TicTacToe game board
+
+        Args:
+            root (tkinter root objection): Main window for tkinter object to start tkinter GUI
+        """
         self.root = root
         self.root.title("TicTacToe!")
+        self.root.resizable(width=False, height=False)
         self.startScreen()
-        self.ORIGINAL_BACKGROUND = self.root.cget("background")
+        self.ORIGINAL_BACKGROUND = self.root.cget("background") # Store original color for later during replay
     
     def startScreen(self):
-        
+        """Generates screen where user can choose width of TicTacToe they want to play on
+        """        
         self.window = tk.Label(self.root, text="Let's Play TicTacToe!", font=("Helvetica", 35))
         self.window.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
         
@@ -44,7 +51,7 @@ class TicTacToeWindow:
         self.size_input_label.grid(row=1, column=0, padx=5, pady=5)
         
         self.size_input_help = tk.Label(self.root,\
-                                    text="""The width is equivalent to the amount of tiles on one side of the board.\nA typical TicTacToe board is 3 tiles wide.""",\
+                                    text="""The width is equivalent to the amount of tiles on one side of the board.\nA typical TicTacToe board is 3 tiles wide. Max width here is 10 tiles.\nDecide who is X and who is O!""",\
                                     font=("Helvetica", 15), relief="ridge")
         self.size_input_help.grid(row=2, columnspan=2, padx=5, pady=5)
         
@@ -60,7 +67,7 @@ class TicTacToeWindow:
     def getSizeOfBoard(self, event=None):
         """
         Get the user to provide the size of the board they want to play. Max size = MAX_BOARD_SIZE
-        Inputs: N/A
+
         Outputs: 
             sizeOfBoard (int) = Length of one side of the TicTacToe board they wish to play on
         """
@@ -88,7 +95,7 @@ class TicTacToeWindow:
         Create a square set of buttons with side length equal to the user input of size.
 
         Args:
-            size_of_board ([int]): [Length of one side of square of TicTacToe]
+            size_of_board (int): Length of one side of square of TicTacToe
         """
         self.root.unbind('<Return>')
         self.root.configure(bg=COLORS["WindowBackground"])
@@ -114,7 +121,7 @@ class TicTacToeWindow:
                 
                 self.tictactoe_button_frame = tk.Frame(self.root, height=self.BUTTON_HEIGHT, width=self.BUTTON_WIDTH)
                 
-                self.tictactoe_button = tk.Button(self.tictactoe_button_frame, text="+", font=("Helvetica", 30, BOLD),\
+                self.tictactoe_button = tk.Button(self.tictactoe_button_frame, text="", font=("Helvetica", 30, tk.font.BOLD),\
                                             state=tk.DISABLED, borderwidth=4, bg=COLORS["ButtonBackground"],\
                                             command=lambda coords=(self.row, self.column): self.gameButtonPressed(coords))
                 self.tictactoe_button.grid(sticky="news")
@@ -139,7 +146,7 @@ class TicTacToeWindow:
         self.find_first_player_button.grid(sticky="news")
     
     def whichPlayerFirst(self):
-        """[Runs TicTacToeGame method that returns 1 for X turn, or -1 for O turn]
+        """Runs TicTacToeGame method that returns 1 for X turn, or -1 for O turn
         """        
         [vals.config(state="normal") for keys, vals in self.gui_game_data.items()]
         
@@ -153,8 +160,10 @@ class TicTacToeWindow:
         self.updateTurn()
         
     def gameButtonPressed(self, coords):
-        """
-        [Determines which button was pressed, via lambda function tied to button that produces a tuple of coordinates for pressed button]
+        """Determines which button was pressed, via lambda function tied to button that produces a tuple of coordinates for pressed button.
+        
+        Args:
+            coords (tuple): Defined as (row, column), both are integers
         """
         self.coordinates_of_button = (coords[0], coords[1])
         self.button_pressed = self.gui_game_data[self.coordinates_of_button]
@@ -192,7 +201,7 @@ class TicTacToeWindow:
 
         Args:
             who_won (integer): Refreshes board with whoever won
-
+                0 = Nobody, 1 = X, -1 = O
         """
         
         if who_won == GAME_VALS["EMPTY"]:
@@ -206,11 +215,14 @@ class TicTacToeWindow:
         self.play_again.grid(row=(self.row + 2), columnspan = (self.column+1), padx=5, pady=5, sticky="news")
     
     def destroyRootWidgets(self):
-         # First clear the board
+        """Clears all widgets in self.root
+        """
         for widgets in self.root.winfo_children():
             widgets.destroy()
     
     def playAgain(self):
+        """Restarts GUI for a new round of playing
+        """
         self.destroyRootWidgets()
         self.root["background"] = self.ORIGINAL_BACKGROUND
         self.startScreen()
@@ -233,7 +245,7 @@ class TicTacToeGame(object):
         """[Appends spot to self.game_data dictionary with key being coordinates of new spot, and value being EMPTY game value]
 
         Args:
-            coordinates ([tuple]): Coordinates of spot to add
+            coordinates (tuple): Coordinates of spot to add
         """
         self.game_data[coordinates] = GAME_VALS["EMPTY"]
         
@@ -241,7 +253,7 @@ class TicTacToeGame(object):
         """Updates the gamespot with either X's or O's spot
 
         Args:
-            coordinates ([tuple]): Coordinates of spot to update
+            coordinates (tuple): Coordinates of spot to update
         """
         if self.turn == 1:
             # Was X's turn, update with X's marker
@@ -270,12 +282,12 @@ class TicTacToeGame(object):
             self.turn = GAME_VALS["O"]
         
     def updateTurnCount(self):
-        """Update the turn count for this instance
+        """Update the turn count for this instance via updating self.turn_count
         """
         self.turn_count += 1
         
     def updateTurn(self):
-        """Update whose turn it is
+        """Update whose turn it is via updating self.turn
         """
         if self.turn == GAME_VALS["X"]:
             self.turn = GAME_VALS["O"]
@@ -347,6 +359,9 @@ class TicTacToeGame(object):
         Args:
             row (int): Row coordinate of user chosen spot
             col (int): Column coordinate of user chosen spot
+        
+        Return:
+            True (boolean): If lies on diagonal of board
         """
         if (row == col) or (row + col == self.game_size - 1):
             return True
