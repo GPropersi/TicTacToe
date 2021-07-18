@@ -3,6 +3,7 @@ from tkinter import messagebox
 from tkinter.font import BOLD
 
 import tkinter as tk
+import random
 
 """
 Play TicTacToe!
@@ -219,8 +220,8 @@ class TicTacToeWindow:
         if self.current_turn == GAME_VALS['O'] and self.player_option.get() == 0:
             print("The computer's turn!")
             self.computer_chosen_coords = self.game_data.randomMoveSupplier()
-            
-    
+            self.gameButtonPressed(self.computer_chosen_coords)
+              
     def gameOver(self, who_won=None):
         """Updates the window with who won
 
@@ -352,10 +353,12 @@ class TicTacToeGame:
         """
         return self.turn
     
-    def checkForWin(self, coordinates):
+    def checkForWin(self, coordinates, game_board=None):
         """Checks if one of the player's won!
 
         Args:
+            game_board (dict) : The game board, with keys being coordinate locations, and values being -1 for O, 0 for EMPTY, 1 for X
+                If None, reads in the instance's gameboard
             coordinates (tuple): Tuple of coordinates of location player chose
             
         Return:
@@ -363,10 +366,16 @@ class TicTacToeGame:
             False (boolean): If there as no win
         """
         
+        self.game_board = game_board
+        
         if self.turn_count < (2 * self.game_size) - 1:
             return
 
         else:
+            
+            if not self.game_board:
+                self.game_board = self.game_data.copy()
+                
         
             rows_check = set()
             col_check = set()
@@ -380,12 +389,12 @@ class TicTacToeGame:
             
             
             for vals in range(self.game_size):
-                rows_check.add(self.game_data[row, vals])
-                col_check.add(self.game_data[vals, col])
+                rows_check.add(self.game_board[row, vals])
+                col_check.add(self.game_board[vals, col])
                 
                 if is_diagonal:
-                    diag_check.add(self.game_data[vals, vals])
-                    anti_diag_check.add(self.game_data[vals, self.game_size-vals-1])
+                    diag_check.add(self.game_board[vals, vals])
+                    anti_diag_check.add(self.game_board[vals, self.game_size-vals-1])
                 
             if len(rows_check) == 1:
                 if self.turn in rows_check:
@@ -418,9 +427,14 @@ class TicTacToeGame:
        
     def randomMoveSupplier(self):
         """Provides a random set of coordinates for the computer to choose 
+        
+        Return:
+            A tuple of coordinates that are currently unoccupied
         """
-        # TODO
-        print("Alright here is where your implementation begins!")
+
+        self.empty_spots = [coords for coords, vals in self.game_data.items() if vals == GAME_VALS["EMPTY"]]
+        
+        return random.choice(self.empty_spots)
 
 if __name__ == "__main__":
     root = tk.Tk()
