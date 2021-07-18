@@ -422,10 +422,13 @@ class TicTacToeGame:
             col (int): Column coordinate of user chosen spot
         
         Return:
-            True (boolean): If lies on diagonal of board
+            True (boolean): If lies on diagonal of board (or anti-diagonal)
+            False (boolean): Does not lie on diagonal (or anti-diagonal)
         """
         if (row == col) or (row + col == self.game_size - 1):
             return True
+        else:
+            return False
        
     def randomMoveSupplier(self):
         """Provides a random set of coordinates for the computer to choose 
