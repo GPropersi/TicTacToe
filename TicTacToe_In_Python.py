@@ -199,7 +199,8 @@ class TicTacToeWindow:
         self.game_data.updateGameSpot(self.coordinates_of_button)
         self.game_data.updateTurnCount()
         
-        if self.game_data.checkForWin(self.coordinates_of_button):
+        if self.game_data.checkForWin(self.coordinates_of_button) == self.game_data.getTurn():
+            # Check if winner value is equal to current turn's value
             self.gameOver()
         else:
             self.game_data.updateTurn()
@@ -361,9 +362,10 @@ class TicTacToeGame:
                 If None, reads in the instance's gameboard
             coordinates (tuple): Tuple of coordinates of location player chose
             
-        Return:
-            True (boolean): If there was a win
-            False (boolean): If there as no win
+        Returns self.turn:
+            1 (int): X won
+            -1 (int): O won
+            None : Nobody won
         """
         
         self.game_board = game_board
@@ -398,19 +400,19 @@ class TicTacToeGame:
                 
             if len(rows_check) == 1:
                 if self.turn in rows_check:
-                    return True
+                    return self.turn
             elif len(col_check) == 1:
                 if self.turn in col_check:
-                    return True
+                    return self.turn
             elif is_diagonal:
                 if len(diag_check) == 1:
                     if self.turn in diag_check:
-                        return True
+                        return self.turn
                 elif len(anti_diag_check) == 1:
                     if self.turn in anti_diag_check:
-                        return True
+                        return self.turn
             else:
-                return False
+                return None
                
     def checkIfDiagonal(self, row, col):
         """Checks if the coordinate user chose lie on a diagonal
