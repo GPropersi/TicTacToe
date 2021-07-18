@@ -199,7 +199,7 @@ class TicTacToeWindow:
         self.game_data.updateGameSpot(self.coordinates_of_button)
         self.game_data.updateTurnCount()
         
-        if self.game_data.checkForWin(self.coordinates_of_button) == self.game_data.getTurn():
+        if self.game_data.checkForWin(self.coordinates_of_button):
             # Check if winner value is equal to current turn's value
             self.gameOver()
         else:
@@ -314,7 +314,7 @@ class TicTacToeGame:
             self.game_data[coordinates] = GAME_VALS["O"]
     
     def checkSpotsAvailable(self):
-        """Checks if cat's game or not
+        """Checks if cat's game or not by tracking move counts
         
         Returns:
             True (boolean): if spots available
@@ -354,65 +354,100 @@ class TicTacToeGame:
         """
         return self.turn
     
-    def checkForWin(self, coordinates, game_board=None):
-        """Checks if one of the player's won!
+    def computerCheckForWin(self, game_board):
+        """Function checks if the backtracking algorithm minimax produced a win, which is based on all possible move sets being run
+        
+        Args:
+            game_board (dict): The game board, with turns being added via minimax algorithm
+            
+        Returns:
+            True (boolean): A win
+            False (boolean): A loss
+        """
+        rows_check = set()
+        col_check = set()
+        diag_check = set()
+        anti_diag_check = set()
+        
+        for rows in range(self.game_size):
+            for cols in range(self.game_size):
+                rows_check.add(self.game_board[rows, cols])
+                col_check.add(self.game_board[cols, rows])
+
+            diag_check.add(self.game_board[rows, rows])
+            anti_diag_check.add(self.game_board[rows, self.game_size-rows-1])
+            
+        if len(rows_check) == 1:
+            if GAME_VALS['EMPTY'] not in rows_check:
+                return True
+        elif len(col_check) == 1:
+            if GAME_VALS['EMPTY'] not in col_check:
+                return True
+        elif len(diag_check) == 1:
+            if GAME_VALS['EMPTY'] not in diag_check:
+                return True          
+        elif len(anti_diag_check) == 1:
+            if GAME_VALS['EMPTY'] not in anti_diag_check:
+                return True
+        
+        else:
+            return False
+    
+    def checkForWin(self, coordinates):
+        """Checks if one of the player's won! Reads in the current instance's gameboard.
+        Only checks for diagonal win if coordinates chosen lie on a diagonal.
 
         Args:
-            game_board (dict) : The game board, with keys being coordinate locations, and values being -1 for O, 0 for EMPTY, 1 for X
-                If None, reads in the instance's gameboard
             coordinates (tuple): Tuple of coordinates of location player chose
             
-        Returns self.turn:
-            1 (int): X won
-            -1 (int): O won
-            None : Nobody won
+        Returns:
+            True (boolean): A win
+            False (boolean): A loss
         """
         
-        self.game_board = game_board
-        
         if self.turn_count < (2 * self.game_size) - 1:
+            # Not enough moves to win a game
             return
 
         else:
             
-            if not self.game_board:
-                self.game_board = self.game_data.copy()
+            self.game_board = self.game_data.copy()
                 
-        
             rows_check = set()
             col_check = set()
             diag_check = set()
             anti_diag_check = set()
-            
+
             row = coordinates[0]
             col = coordinates[1]
             
             is_diagonal = self.checkIfDiagonal(row, col)
             
-            
             for vals in range(self.game_size):
-                rows_check.add(self.game_board[row, vals])
-                col_check.add(self.game_board[vals, col])
+                rows_check.add(self.game_data[(row, vals)])
+                col_check.add(self.game_data[(vals, col)])
                 
                 if is_diagonal:
-                    diag_check.add(self.game_board[vals, vals])
-                    anti_diag_check.add(self.game_board[vals, self.game_size-vals-1])
-                
+                    diag_check.add(self.game_board[(vals, vals)])
+                    anti_diag_check.add(self.game_board[(vals, self.game_size-vals-1)])
+            
+            # Checks if current turn is only value in set, and not just EMPTY
             if len(rows_check) == 1:
-                if self.turn in rows_check:
-                    return self.turn
+                if self.turn in rows_check:                   
+                    return True
             elif len(col_check) == 1:
                 if self.turn in col_check:
-                    return self.turn
+                    return True
             elif is_diagonal:
+                # Only checks for diagonal win if spot chosen is on a diagonal
                 if len(diag_check) == 1:
                     if self.turn in diag_check:
-                        return self.turn
+                        return True
                 elif len(anti_diag_check) == 1:
                     if self.turn in anti_diag_check:
-                        return self.turn
+                        return True
             else:
-                return None
+                return False
                
     def checkIfDiagonal(self, row, col):
         """Checks if the coordinate user chose lie on a diagonal
