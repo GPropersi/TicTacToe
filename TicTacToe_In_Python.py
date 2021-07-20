@@ -369,6 +369,8 @@ class TicTacToeGame:
         diag_check = set()
         anti_diag_check = set()
         
+        winning_checks = [rows_check, col_check, diag_check, anti_diag_check]
+        
         for rows in range(self.game_size):
             for cols in range(self.game_size):
                 rows_check.add(self.game_board[rows, cols])
@@ -377,25 +379,12 @@ class TicTacToeGame:
             diag_check.add(self.game_board[rows, rows])
             anti_diag_check.add(self.game_board[rows, self.game_size-rows-1])
             
-        if len(rows_check) == 1:
-            if GAME_VALS['EMPTY'] not in rows_check:
-                return True
-        elif len(col_check) == 1:
-            if GAME_VALS['EMPTY'] not in col_check:
-                return True
-        elif len(diag_check) == 1:
-            if GAME_VALS['EMPTY'] not in diag_check:
-                return True          
-        elif len(anti_diag_check) == 1:
-            if GAME_VALS['EMPTY'] not in anti_diag_check:
-                return True
-        
-        else:
-            return False
+        return self.findAWinner(winning_checks)
     
     def checkForWin(self, coordinates):
         """Checks if one of the player's won! Reads in the current instance's gameboard.
         Only checks for diagonal win if coordinates chosen lie on a diagonal.
+        Only checks for win after first player has made 3 possible moves
 
         Args:
             coordinates (tuple): Tuple of coordinates of location player chose
@@ -411,8 +400,6 @@ class TicTacToeGame:
 
         else:
             
-            self.game_board = self.game_data.copy()
-                
             rows_check = set()
             col_check = set()
             diag_check = set()
@@ -423,31 +410,20 @@ class TicTacToeGame:
             
             is_diagonal = self.checkIfDiagonal(row, col)
             
+            if is_diagonal:
+                winning_checks = [rows_check, col_check, diag_check, anti_diag_check]
+            else:
+                winning_checks = [rows_check, col_check]
+            
             for vals in range(self.game_size):
                 rows_check.add(self.game_data[(row, vals)])
                 col_check.add(self.game_data[(vals, col)])
                 
                 if is_diagonal:
-                    diag_check.add(self.game_board[(vals, vals)])
-                    anti_diag_check.add(self.game_board[(vals, self.game_size-vals-1)])
-            
-            # Checks if current turn is only value in set, and not just EMPTY
-            if len(rows_check) == 1:
-                if self.turn in rows_check:                   
-                    return True
-            elif len(col_check) == 1:
-                if self.turn in col_check:
-                    return True
-            elif is_diagonal:
-                # Only checks for diagonal win if spot chosen is on a diagonal
-                if len(diag_check) == 1:
-                    if self.turn in diag_check:
-                        return True
-                elif len(anti_diag_check) == 1:
-                    if self.turn in anti_diag_check:
-                        return True
-            else:
-                return False
+                    diag_check.add(self.game_data[(vals, vals)])
+                    anti_diag_check.add(self.game_data[(vals, self.game_size-vals-1)])
+                    
+            return self.findAWinner(winning_checks)
                
     def checkIfDiagonal(self, row, col):
         """Checks if the coordinate user chose lie on a diagonal
@@ -476,6 +452,26 @@ class TicTacToeGame:
         
         return random.choice(self.empty_spots)
 
+    def findAWinner(self, winner_checks):
+        """Finds a winner from a set of given checks, checks being a win from a row, column, diagonal, or anti-diagonal
+        
+        Args:
+            winner_checks (list) : A list of sets, 1 for each required
+                These sets contain all unique values for the associated row/column/diagonal
+                If a single set contains only one unique non-empty value (i.e. 1 or -1), then someone has won
+        
+        Return:
+            True (boolean) : There was a winner
+            False (boolean) : There was no winner
+        
+        """
+        for checks in winner_checks:
+            if len(checks) == 1:
+                if GAME_VALS['EMPTY'] not in checks:
+                    return True
+        
+        return False
+    
 if __name__ == "__main__":
     root = tk.Tk()
     TicTacToeWindow(root)  
