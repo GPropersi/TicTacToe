@@ -179,6 +179,18 @@ TEST_CASES = [
     (2, 0) : 0,
     (2, 1) : 0,
     (2, 2) : 1
+},
+
+{ #9
+    (0, 0) : -1,
+    (0, 1) : -1,
+    (0, 2) : 1,
+    (1, 0) : -1,
+    (1, 1) : -1,
+    (1, 2) : 1,
+    (2, 0) : 1,
+    (2, 1) : 1,
+    (2, 2) : 1
 }]
 
 GAME_VALS = {
@@ -188,10 +200,10 @@ GAME_VALS = {
 }
 
 
-def minimaxThisTurn(whose_turn, game_board, turn_count):
-    """Implements minimax algorithm, reads in the current TicTacToe gameboard, performs algorithm to find potential best move
+def minimaxScoreThisTurn(whose_turn, game_board, turn_count):
+    """Implements minimax algorithm, reads in a TicTacToe gameboard, performs algorithm to find potential best move
     This involves determining whether best move is offensive or defensive
-    If there are multiple best movies, it will randomly choose the best
+    It creates a 'game tree', with each branch being a different possible game option
     Scores assigned for gameboard positions:
     
     -10 for O win
@@ -225,9 +237,9 @@ def minimaxThisTurn(whose_turn, game_board, turn_count):
         game_board[space] = 0
         
     if whose_turn == GAME_VALS["O"]:
-        return min(scores.values()), min(turns.values())
+        return min(scores.values()) + min(turns.values()), min(turns.values())
     else:
-        return max(scores.values()), min(turns.values())
+        return max(scores.values()) - min(turns.values()), min(turns.values())
 
 def findNextMove(game_board, whose_turn):
     """Function runs each possible move available through MINIMAX algorithm to determine a score for the next move.
@@ -245,7 +257,7 @@ def findNextMove(game_board, whose_turn):
     gameboard_for_next_move = game_board.copy()
     for moves in available_moves:
         gameboard_for_next_move[moves] = whose_turn
-        score_for_this_turn, numb_of_turns = minimaxThisTurn(whose_turn * -1, gameboard_for_next_move, 0)
+        score_for_this_turn, numb_of_turns = minimaxScoreThisTurn(whose_turn * -1, gameboard_for_next_move, 0)
         possible_final_moves[moves] = (score_for_this_turn, numb_of_turns)
         gameboard_for_next_move[moves] = 0
             
@@ -262,11 +274,16 @@ def findBestTurn(next_moves, whose_turn):
         [tuple]: Coordinates of best possible move
     """
     
-    final_score = 0
+    if whose_turn == GAME_VALS["X"]:
+        final_score = -1000
+    else:
+        final_score = 1000
+
     final_turns = 1000
     
     for coordinates, scores in next_moves.items():
         if whose_turn == GAME_VALS["X"] and scores[0] > final_score:
+            
             final_coordinates = coordinates
             final_score = scores[0]
             final_turns = scores[1]
@@ -295,25 +312,23 @@ def computerCheckForWin(game_size, game_board):
             True (boolean): A win
             False (boolean): A loss
         """
-        rows_check = set()
-        col_check = set()
         diag_check = set()
         anti_diag_check = set()
-        
-        winning_checks = [rows_check, col_check, diag_check, anti_diag_check]
-        
+
         for rows in range(game_size):
+            rows_check = set()
+            col_check = set()
             for cols in range(game_size):
                 rows_check.add(game_board[rows, cols])
                 col_check.add(game_board[cols, rows])
                 
-            if findAWinner(winning_checks[0:2]):
+            if findAWinner([rows_check, col_check]):
                 return True
 
             diag_check.add(game_board[rows, rows])
             anti_diag_check.add(game_board[rows, game_size-rows-1])
         
-        if findAWinner(winning_checks[2:]):
+        if findAWinner([diag_check, anti_diag_check]):
             return True
             
         
@@ -372,8 +387,32 @@ def findAWinner(winner_checks):
     
     return False
 
+def displayGameBoard(game_size, game_board):
+    
+    for rows in range(game_size):
+        for cols in range(game_size):
+            value = [turn for turn, val in GAME_VALS.items() if val == game_board[(rows, cols)]]
+            if value == ['EMPTY']:
+                value = [""]
+            print(value, end=" ")
+        print("")
+    coordinates = [coords for coords, values in game_board.items()]
+
 if __name__ == "__main__":
-
-    next_move = findNextMove(TEST_CASES[8], 1)
-
-    print("Done")
+    while True:
+        try:
+            test_case_to_run = int(input("Which test case: "))
+            player = GAME_VALS[input("Which player: ")]
+            next_move = findNextMove(TEST_CASES[test_case_to_run], player)
+            print(f"Best move is {next_move}")
+            TEST_CASES[test_case_to_run][next_move] = player
+            displayGameBoard(3, TEST_CASES[test_case_to_run])
+        except IndexError:
+            print("Not a test case available to run.")
+            continue
+        except ValueError:
+            print("Enter a valid integer test case.")
+            continue
+        except KeyError:
+            print("X or O only")
+            continue
