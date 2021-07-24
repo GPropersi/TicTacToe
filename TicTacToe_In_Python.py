@@ -81,7 +81,7 @@ class TicTacToeWindow:
         self.size_capture = tk.Button(self.root, width=25, text="Let's Play!", font=("Helvetica", 15), command=self.getPlayerChoice, borderwidth=5)
         self.size_capture.grid(row=4, column=0, columnspan=3, padx=5, pady=5)
         
-        self.root.bind('<Return>', self.getSizeOfBoard)
+        self.root.bind('<Return>', self.getPlayerChoice)
         self.size_input.focus()
     
     def getPlayerChoice(self, event=None):
@@ -570,7 +570,7 @@ class TicTacToeGame:
         self.minimax_count = 0
         
         possible_final_moves = {}
-        gameboard_for_next_move = self.game_data.copy()
+        gameboard_for_next_move = self.game_data
         for moves in available_moves:
             gameboard_for_next_move[moves] = self.turn
             score_for_this_turn, numb_of_turns = self.minimaxScoreThisTurn(self.turn * -1, gameboard_for_next_move, 0)
