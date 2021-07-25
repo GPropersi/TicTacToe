@@ -1,7 +1,8 @@
-from Minimax_for_TicTacToe import findAWinner
+from typing import final
 from time import time
 from tkinter import messagebox
 from tkinter.font import BOLD
+from math import ceil
 
 import tkinter as tk
 import random
@@ -558,30 +559,33 @@ class TicTacToeGame:
     def findNextMoveForComputer(self):
         """Function runs each possible move available through MINIMAX algorithm to determine a score for the next move.
 
-        Args:
-            game_board (dict): Keys = coordinates of spots, vals are -1 if O spot, 0 if EMPTY, 1 if X spot
-            whose_turn (int): -1 for O's turn, 1 for X's turn
-
         Returns:
-            [tuple]: Coordinates of best available next move
+            (tuple): Coordinates of best available next move
         """
+        if self.game_size > 3 and self.turn_count <= 2:
+            return self.randomMoveSupplier()
+        
         available_moves = [coordinates for coordinates, value in self.game_data.items() if value == GAME_VALS["EMPTY"]]
         
         self.minimax_count = 0
+        
+        alpha = -1000000
+        beta = 1000000
         
         possible_final_moves = {}
         gameboard_for_next_move = self.game_data
         for moves in available_moves:
             gameboard_for_next_move[moves] = self.turn
-            score_for_this_turn, numb_of_turns = self.minimaxScoreThisTurn(self.turn * -1, gameboard_for_next_move, 0)
-            possible_final_moves[moves] = (score_for_this_turn, numb_of_turns)
+            # _ is returned turn count from minimax, and is ignored
+            score_for_this_turn, _ = self.minimaxScoreThisTurn(self.turn * -1, gameboard_for_next_move, 0, alpha, beta)
+            possible_final_moves[moves] = score_for_this_turn
             gameboard_for_next_move[moves] = GAME_VALS["EMPTY"]
             
         print(f"It took {self.minimax_count} iterations to get a move.")
                 
         return self.findBestTurn(possible_final_moves)
 
-    def minimaxScoreThisTurn(self, whose_turn, game_board, turn_count):
+    def minimaxScoreThisTurn(self, whose_turn, game_board, turn_count, alpha, beta):
         """Implements minimax algorithm, reads in a TicTacToe gameboard, performs algorithm to find potential best move
         This involves determining whether best move is offensive or defensive
         It creates a 'game tree', with each branch being a different possible game option
@@ -599,7 +603,11 @@ class TicTacToeGame:
             turn_count (int) : Initialized at 0, counts the # of turns needed for a win in order to find optimal move
         """
         self.minimax_count += 1
-        #print(f"Minimax iteration: {self.minimax_count}")
+        
+        if whose_turn == GAME_VALS["X"]:
+            best = -10000
+        else:
+            best = 10000
         
         if self.computerCheckForWin(game_board):
             if whose_turn == GAME_VALS["X"]:
@@ -615,10 +623,23 @@ class TicTacToeGame:
         turns = {}
         for space in available_spaces:
             game_board[space] = whose_turn
-            final_score, final_turn_count = self.minimaxScoreThisTurn(whose_turn * -1, game_board, turn_count + 1)
+            final_score, final_turn_count = self.minimaxScoreThisTurn(whose_turn * -1, game_board, turn_count + 1, alpha, beta)
+
             scores[space] = final_score
             turns[space] = final_turn_count
             game_board[space] = 0
+            
+            if whose_turn == GAME_VALS['X']:
+                best = max(best, final_score)
+                alpha = max(alpha, best)
+                if beta <= alpha:
+                    break
+            else:
+                best = min(best, final_score)
+                beta = min(beta, best)
+                if beta <= alpha:
+                    break
+            
             
         if whose_turn == GAME_VALS["O"]:
             return min(scores.values()) + min(turns.values()), min(turns.values())
@@ -626,41 +647,30 @@ class TicTacToeGame:
             return max(scores.values()) - min(turns.values()), min(turns.values())
 
     def findBestTurn(self, next_moves):
-        """Given a list of best possible turns, find the best possible turn in the shortest amount of turn
+        """Given a list of best possible turns, find the best possible turn in the shortest amount of turn. 
+        Since move count is included in the score, this will just need to maximize score for X, and minimize for O.
+        If multiple turns have the same score, it randomly chooses one.
 
         Args:
-            next_moves (dict): Keys are next available moves, values are a tuple of (score, minimum move to win/loss)
-            whose_turn (int) : -1 for O's turn, 1 for X's turn
+            next_moves (dict): Keys are next available moves, values are the score for that move
 
         Returns:
-            [tuple]: Coordinates of best possible move
+            (tuple): Coordinates of best possible move
         """
         
-        if self.turn == GAME_VALS["X"]:
-            final_score = -1000
+        if self.turn == GAME_VALS['X']:
+            final_score = max([score for score in next_moves.values()])
         else:
-            final_score = 1000
-
-        final_turns = 1000
-        
-        for coordinates, scores in next_moves.items():
-            if self.turn == GAME_VALS["X"] and scores[0] > final_score:
-                
-                final_coordinates = coordinates
-                final_score = scores[0]
-                final_turns = scores[1]
+            final_score = min([score for score in next_moves.values()])
             
-            elif self.turn == GAME_VALS["O"] and scores[0] < final_score:
-                final_coordinates = coordinates
-                final_score = scores[0]
-                final_turns = scores[1]   
-                    
-            elif scores[0] == final_score:
-                if scores[1] < final_turns:
-                    final_coordinates = coordinates
-                    final_turns = scores[1]
+        final_moves = [coords for coords, score in next_moves.items() if score == final_score]
         
-        return final_coordinates
+        if len(final_moves) == 1:
+            return final_moves[0]
+        
+        else:
+            return random.choice(final_moves)
+            
 
 if __name__ == "__main__":
     root = tk.Tk()
