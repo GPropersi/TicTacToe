@@ -235,11 +235,16 @@ class TicTacToeWindow:
         self.game_data.updateGameSpot(self.coordinates_of_button)
         self.game_data.updateTurnCount()
         
-        if self.game_data.checkForWin(self.coordinates_of_button):
+        if self.game_data.playerCheckForWin(self.coordinates_of_button):
             # Check if winner value is equal to current turn's value
             self.gameOver()
         else:
             self.game_data.updateTurn()
+            
+            if self.game_data.getTurnCount() > (self.sizeOfBoard * 2) + 2:
+                if not self.game_data.checkIfWinPossible():
+                    self.gameOver(possible_moves=False)
+                    return
             
             if not self.game_data.checkSpotsAvailable():
                 self.gameOver(GAME_VALS['EMPTY'])
@@ -271,7 +276,7 @@ class TicTacToeWindow:
                 self.computer_chosen_coords = self.game_data.findNextMoveForComputer()
                 self.gameButtonPressed(self.computer_chosen_coords)
       
-    def gameOver(self, who_won=None):
+    def gameOver(self, who_won=None, possible_moves=True):
         """Updates the window with who won
 
         Args:
@@ -281,7 +286,11 @@ class TicTacToeWindow:
         
         if who_won == GAME_VALS["EMPTY"]:
             winning_string = "Tie!"
-        elif not who_won:
+        elif possible_moves is False:
+            winning_string = "No winning moves left. Tie!"
+            if self.sizeOfBoard == 3:
+                self.status_label['font'] = ("Helvetica", 17, BOLD)
+        elif not who_won and possible_moves is True:
             if self.current_turn == self.player_one_x_or_o.get():
                 winning_string = "Player 1 Won!"
             else:
@@ -352,6 +361,14 @@ class TicTacToeGame:
         self.game_size = game_size
         self.computer_player = False
         self.minimax_count = 0
+        if self.game_size == 3:
+            self.max_minimax_depth = self.game_size ** 2
+        elif 4 <= self.game_size <= 7:
+            self.max_minimax_depth = (-self.game_size + 9)
+        elif self.game_size == 8:
+            self.max_minimax_depth = 2
+        else:
+            self.max_minimax_depth = 1
     
     def setPlayer(self, computer_player):
         """Setter for player option
@@ -402,7 +419,53 @@ class TicTacToeGame:
 
         else:
             return False
-                 
+    
+    def checkIfWinPossible(self):
+        """
+        Check if a win is even possible - if all rows, columns, and diagonals contain one of each X and O, no wins are possible.
+        
+        If game_tied_count == (Length of board * 2) + 2, True
+        
+        Returns:
+            True (boolean) : If win is still possible
+            False (boolean) : If win is not possible
+        """
+        
+        diag_check = set()
+        anti_diag_check = set()
+        game_board = self.game_data
+        game_tied_count = 0
+
+        for rows in range(self.game_size):
+            rows_check = set()
+            col_check = set()
+            for cols in range(self.game_size):
+                rows_check.add(game_board[rows, cols])
+                col_check.add(game_board[cols, rows])
+                
+            if GAME_VALS['X'] in rows_check and GAME_VALS['O'] in rows_check:
+                game_tied_count += 1
+            
+            if GAME_VALS['X'] in col_check and GAME_VALS['O'] in col_check:
+                game_tied_count += 1
+                
+
+            diag_check.add(game_board[rows, rows])
+            anti_diag_check.add(game_board[rows, self.game_size-rows-1])
+        
+        if GAME_VALS ['X'] in diag_check and GAME_VALS['O'] in diag_check:
+            game_tied_count += 1
+        
+        if GAME_VALS['X'] in anti_diag_check and GAME_VALS['O'] in anti_diag_check:
+            game_tied_count += 1
+            
+        print(f"Game size {self.game_size}, count is {game_tied_count}")
+        
+        if game_tied_count >= (self.game_size * 2) + 2:
+            return False
+        else:
+            return True
+               
     def findFirstPlayer(self):
         """Randomly get first player based on current time being even or odd.
         """
@@ -432,18 +495,31 @@ class TicTacToeGame:
         """
         return self.turn
     
-    def computerCheckForWin(self, game_board):
+    def getTurnCount(self):
+        """Getter for self.turn_count, number of turns played
+        
+        Returns:
+            self.turn_count (integer): Number of turns played
+        """
+        return self.turn_count
+        
+    def computerCheckForWin(self, game_board, score_the_move=False):
         """Function checks if the backtracking algorithm minimax produced a win, which is based on all possible move sets being run
         
         Args:
             game_board (dict): The game board to check if there is a win
+            score_the_move (boolean) : True if desire to score themove
             
         Returns:
             True (boolean): A win
             False (boolean): A loss
+            score (tuple) : If asking for a score, returns a tuple with first value being maximizer score (X), second being minimzer score (O)
         """
         diag_check = set()
         anti_diag_check = set()
+        
+        if score_the_move:
+            max_depth_score = [0, 0]
         
         for rows in range(self.game_size):
             rows_check = set()
@@ -454,16 +530,52 @@ class TicTacToeGame:
             
             if self.findAWinner([rows_check, col_check]):
                 return True
+            
+            if score_the_move:
+                maximizer_score, minimizer_score = self.scoreTheMove([rows_check, col_check])
+                max_depth_score[0] += maximizer_score
+                max_depth_score[1] += minimizer_score
 
             diag_check.add(game_board[rows, rows])
             anti_diag_check.add(game_board[rows, self.game_size-rows-1])
         
         if self.findAWinner([diag_check, anti_diag_check]):
             return True
+        
+        if score_the_move:
+                maximizer_score, minimizer_score = self.scoreTheMove([diag_check, anti_diag_check])
+                max_depth_score[0] += maximizer_score
+                max_depth_score[1] += minimizer_score
+                
+                return tuple(max_depth_score)
+
             
         return False
     
-    def checkForWin(self, coordinates):
+    def scoreTheMove(self, score_checks):
+        """Finds a score by looking at all the rows, columns, and diagonals. If any contain one value and empty, assign a point
+        if it was X (maximizer), and a negative point if it was for O (minimizer).
+        
+        Args:
+            score_checks (list) : A list of sets
+                These sets contain all unique values for the associated row/column/diagonal
+        
+        Return:
+            score (tuple) : Tuple containing max score for X, and min score for O
+        
+        """
+        score = [0, 0]
+        for checks in score_checks:
+            if len(checks) == 2:
+                if GAME_VALS['EMPTY'] in checks:
+                    if GAME_VALS['X'] in checks:
+                        score[0] += 2
+                    else:
+                        score[1] += -2
+        
+        return tuple(score)
+    
+    def playerCheckForWin(self, coordinates):
         """Checks if one of the player's won! Reads in the current instance's gameboard.
         Only checks for diagonal win if coordinates chosen lie on a diagonal.
         Only checks for win after first player has made 3 possible moves
@@ -562,8 +674,12 @@ class TicTacToeGame:
         Returns:
             (tuple): Coordinates of best available next move
         """
-        if self.game_size > 3 and self.turn_count <= 2:
-            return self.randomMoveSupplier()
+        if self.game_size == 4:
+            if self.turn_count <= 3:
+                return self.randomMoveSupplier()
+        elif self.game_size > 4:
+            if self.turn_count <= (self.game_size):
+                return self.randomMoveSupplier()
         
         available_moves = [coordinates for coordinates, value in self.game_data.items() if value == GAME_VALS["EMPTY"]]
         
@@ -577,7 +693,7 @@ class TicTacToeGame:
         for moves in available_moves:
             gameboard_for_next_move[moves] = self.turn
             # _ is returned turn count from minimax, and is ignored
-            score_for_this_turn, _ = self.minimaxScoreThisTurn(self.turn * -1, gameboard_for_next_move, 0, alpha, beta)
+            score_for_this_turn, _ = self.minimaxScoreThisTurn(self.turn * -1, gameboard_for_next_move, 0, alpha, beta, self.max_minimax_depth)
             possible_final_moves[moves] = score_for_this_turn
             gameboard_for_next_move[moves] = GAME_VALS["EMPTY"]
             
@@ -585,7 +701,7 @@ class TicTacToeGame:
                 
         return self.findBestTurn(possible_final_moves)
 
-    def minimaxScoreThisTurn(self, whose_turn, game_board, turn_count, alpha, beta):
+    def minimaxScoreThisTurn(self, whose_turn, game_board, turn_count, alpha, beta, max_depth):
         """Implements minimax algorithm, reads in a TicTacToe gameboard, performs algorithm to find potential best move
         This involves determining whether best move is offensive or defensive
         It creates a 'game tree', with each branch being a different possible game option
@@ -601,9 +717,13 @@ class TicTacToeGame:
             whose_turn (int) : -1 for O's turn, 1 for X's turn
             game_board (dict) : Keys = coordinates of spots, vals are -1 if O spot, 0 if EMPTY, 1 if X spot
             turn_count (int) : Initialized at 0, counts the # of turns needed for a win in order to find optimal move
+            alpha (int) : Equivalent to negative infinity, starts low and is used as comparison in max evaluation
+            beta (int) : Equivalent to positive infinity, starts high and is used as compariso in min evaluation
+            max_depth (int) : Max depth is the max number of turn the computer can search for
         """
         self.minimax_count += 1
         
+
         if whose_turn == GAME_VALS["X"]:
             best = -10000
         else:
@@ -614,16 +734,28 @@ class TicTacToeGame:
                 return -10, turn_count
             else:
                 return 10, turn_count
+
+        if turn_count > max_depth:
+            # Insert heuristic here to give some points depending on situation of the board
+            #print("Hit greater than 9 turns of depth, returning")
+            #self._displayGameBoard(self.game_size, game_board)
+            #TODO CHECK FOR ANY ACTUAL WINS AVAILABLE HERE ALSO
+            #TODO A DRAW SHOULD COUNT AS A WIN AT A CERTAIN GAMESIZE
+            max_depth_score = self.computerCheckForWin(game_board, True)
+            if whose_turn == GAME_VALS["X"]:
+                return max_depth_score[0], turn_count
+            else:
+                return max_depth_score[1], turn_count
             
         if not self.checkSpotsAvailable(game_board):
             return 0, turn_count
-        
+                
         available_spaces = [coords for coords, vals in game_board.items() if vals == 0]
         scores = {}
         turns = {}
         for space in available_spaces:
             game_board[space] = whose_turn
-            final_score, final_turn_count = self.minimaxScoreThisTurn(whose_turn * -1, game_board, turn_count + 1, alpha, beta)
+            final_score, final_turn_count = self.minimaxScoreThisTurn(whose_turn * -1, game_board, turn_count + 1, alpha, beta, self.max_minimax_depth)
 
             scores[space] = final_score
             turns[space] = final_turn_count
@@ -670,6 +802,18 @@ class TicTacToeGame:
         
         else:
             return random.choice(final_moves)
+        
+    def _displayGameBoard(self, game_size, game_board):
+    
+        for rows in range(game_size):
+            for cols in range(game_size):
+                value = [turn for turn, val in GAME_VALS.items() if val == game_board[(rows, cols)]]
+                if value == ['EMPTY']:
+                    value = [""]
+                print(value, end=" ")
+            print("")
+        coordinates = [coords for coords, values in game_board.items()]
+
             
 
 if __name__ == "__main__":
