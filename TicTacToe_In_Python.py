@@ -1,4 +1,3 @@
-from typing import final
 from time import time
 from tkinter import messagebox
 from tkinter.font import BOLD
