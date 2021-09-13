@@ -100,7 +100,7 @@ class TicTacToeWindow:
         self.size_input["state"] = "disabled"
 
         self.player_option_frame = tk.LabelFrame(self.root, text="Player 1, Choose X or O", font=("Helvetica", 10))
-        self.player_option_frame.grid(row=5, columnspan=2, padx=5, stick="news")
+        self.player_option_frame.grid(row=5, columnspan=2, padx=5, sticky="news")
         
         self.player_one_x_or_o = tk.IntVar()
         self.x_player = tk.Radiobutton(self.player_option_frame, text="X", font=("Helvetica", 13), variable=self.player_one_x_or_o, value=GAME_VALS['X'])
@@ -112,8 +112,18 @@ class TicTacToeWindow:
         self.player_option_frame.grid_columnconfigure(0, weight=1)
         self.player_option_frame.grid_columnconfigure(1, weight=1)
         
-        self.start_button = tk.Button(self.root, width=25, text="Start!", font=("Helvetica", 15), command= lambda: self.makeGameBoard(self.sizeOfBoard), borderwidth=5)
+        self.start_button = tk.Button(self.root, width=25, text="Start!", font=("Helvetica", 15), command=self.startGame, borderwidth=5)
         self.start_button.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
+
+    def startGame(self):
+        """
+        Checks if user chose X or O. If not, make them re-enter. If they did, start the game!
+        """
+        if not self.player_one_x_or_o.get():
+            messagebox.showerror("Error", "Please choose X or O.")
+        else:
+            self.makeGameBoard(self.sizeOfBoard)
+
         
     def getSizeOfBoard(self):
         """
@@ -132,7 +142,6 @@ class TicTacToeWindow:
         try:
             if 3 <= int(self.sizeOfBoard) <= MAX_BOARD_SIZE:
                 # Number is positive and greater than/equal to three, less than/inclusive of max board size.
-                #self.makeGameBoard(int(self.sizeOfBoard))
                 return True
             
             else:
@@ -736,10 +745,6 @@ class TicTacToeGame:
 
         if turn_count > max_depth:
             # Insert heuristic here to give some points depending on situation of the board
-            #print("Hit greater than 9 turns of depth, returning")
-            #self._displayGameBoard(self.game_size, game_board)
-            #TODO CHECK FOR ANY ACTUAL WINS AVAILABLE HERE ALSO
-            #TODO A DRAW SHOULD COUNT AS A WIN AT A CERTAIN GAMESIZE
             max_depth_score = self.computerCheckForWin(game_board, True)
             if whose_turn == GAME_VALS["X"]:
                 return max_depth_score[0], turn_count
