@@ -2,6 +2,7 @@ from time import time
 from tkinter import messagebox
 from tkinter.font import BOLD
 from math import ceil
+from functools import wraps
 
 import tkinter as tk
 import random
@@ -31,23 +32,24 @@ MAX_BOARD_SIZE = 10
 BOARD_SIZES = list(range(3, MAX_BOARD_SIZE + 1))
 
 class TicTacToeWindow:
-    """Window to play TicTacToe on!
-    """
+    """Window to play TicTacToe on!"""
+
     def __init__(self, root):
         """Constructor for TicTacToe game board
 
         Args:
-            root (tkinter root objection): Main window for tkinter object to start tkinter GUI
+            root (tk.Tk()): Main window for tkinter object to start tkinter GUI
         """
+
         self.root = root
         self.root.title("TicTacToe!")
         self.root.resizable(width=False, height=False)
-        self.startScreen()
-        self.ORIGINAL_BACKGROUND = self.root.cget("background") # Store original color for later during replay
+        self.start_screen()
+        self.original_background = self.root.cget("background") # Store original color for later during replay
     
-    def startScreen(self):
-        """Generates screen where user can choose width of TicTacToe they want to play on
-        """        
+    def start_screen(self):
+        """Generates screen where user can choose width of TicTacToe they want to play on"""
+
         self.window = tk.Label(self.root, text="Let's Play TicTacToe!", font=("Helvetica", 35))
         self.window.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
         
@@ -78,21 +80,20 @@ class TicTacToeWindow:
                                     font=("Helvetica", 13), relief="ridge")
         self.size_input_help.grid(row=3, columnspan=2, padx=5, pady=5, ipadx=5, sticky="news")
         
-        self.size_capture = tk.Button(self.root, width=25, text="Let's Play!", font=("Helvetica", 15), command=self.getPlayerChoice, borderwidth=5)
+        self.size_capture = tk.Button(self.root, width=25, text="Let's Play!", font=("Helvetica", 15), command=self.get_player_choice, borderwidth=5)
         self.size_capture.grid(row=4, column=0, columnspan=3, padx=5, pady=5)
         
-        self.root.bind('<Return>', self.getPlayerChoice)
+        self.root.bind('<Return>', self.get_player_choice)
         self.size_input.focus()
     
-    def getPlayerChoice(self, event=None):
-        """Make Player 1 choose if they want to play as X or O. Player 2 or the AI will take what is leftover
-        """
+    def get_player_choice(self, event=None):
+        """Make Player 1 choose if they want to play as X or O. Player 2 or the AI will take what is leftover"""
         
-        if not self.getSizeOfBoard():
+        if not self.get_size_of_board():
             # Size of board not input correctly
             return
         
-        self.sizeOfBoard = int(self.sizeOfBoard)
+        self.size_of_board = int(self.size_of_board)
         
         self.comp_player_chk["state"] = "disabled"
         self.two_player_chk["state"] = "disabled"
@@ -112,20 +113,23 @@ class TicTacToeWindow:
         self.player_option_frame.grid_columnconfigure(0, weight=1)
         self.player_option_frame.grid_columnconfigure(1, weight=1)
         
-        self.start_button = tk.Button(self.root, width=25, text="Start!", font=("Helvetica", 15), command=self.startGame, borderwidth=5)
+        self.start_button = tk.Button(self.root, width=25, text="Start!", font=("Helvetica", 15), command=self.start_game, borderwidth=5)
         self.start_button.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
 
-    def startGame(self):
+    def start_game(self):
         """
         Checks if user chose X or O. If not, make them re-enter. If they did, start the game!
         """
+
         if not self.player_one_x_or_o.get():
             messagebox.showerror("Error", "Please choose X or O.")
         else:
-            self.makeGameBoard(self.sizeOfBoard)
+            self.make_game_board()
+
+        self.game_is_over = False
 
         
-    def getSizeOfBoard(self):
+    def get_size_of_board(self):
         """
         Get the user to provide the size of the board they want to play. Max size = MAX_BOARD_SIZE
 
@@ -133,15 +137,17 @@ class TicTacToeWindow:
             True (boolean) : Size of board was a valid integer between and including 3 and 10
             False (boolean) : Size was not valid
         """
+
         SIZE_ERROR_MESSAGE = f"Please enter a valid positive size, max size {MAX_BOARD_SIZE}, min size 3."
         if not self.size_input.get().isdigit():
             messagebox.showerror("Error", SIZE_ERROR_MESSAGE)
             return False
         
-        self.sizeOfBoard = self.size_input.get()
+        size_of_board = self.size_input.get()
         try:
-            if 3 <= int(self.sizeOfBoard) <= MAX_BOARD_SIZE:
+            if 3 <= int(size_of_board) <= MAX_BOARD_SIZE:
                 # Number is positive and greater than/equal to three, less than/inclusive of max board size.
+                self.size_of_board = int(size_of_board)
                 return True
             
             else:
@@ -152,44 +158,40 @@ class TicTacToeWindow:
             messagebox.showerror("Error", SIZE_ERROR_MESSAGE)
             return False
            
-    def makeGameBoard(self, size_of_board):
-        """
-        Create a square set of buttons with side length equal to the user input of size.
+    def make_game_board(self):
+        """Create a square set of buttons with side length equal to the user input of size."""
 
-        Args:
-            size_of_board (int): Length of one side of square of TicTacToe
-        """
         self.root.unbind('<Return>')
         self.root.configure(bg=COLORS["WindowBackground"])
         
          # First clear the board
-        self.destroyRootWidgets()
+        self.destroy_root_widgets()
         
-        if size_of_board > 7:
+        if self.size_of_board > 7:
             self.BUTTON_HEIGHT = 75
             self.BUTTON_WIDTH = 75
         else:
             self.BUTTON_HEIGHT = 100
             self.BUTTON_WIDTH = 100
         
-        self.game_data = TicTacToeGame(size_of_board)
+        self.game_data = TicTacToeGame(self.size_of_board)
         
         # Set single player or two player option
-        self.setPlayerOptionInGame()
+        self.set_player_option_in_game()
         
         self.gui_game_data = {}
         
         # Next, loop through and create a square of buttons
-        for height in range(size_of_board):
+        for height in range(self.size_of_board):
             self.row = height
-            for width in range(size_of_board):
+            for width in range(self.size_of_board):
                 self.column = width
                 
                 self.tictactoe_button_frame = tk.Frame(self.root, height=self.BUTTON_HEIGHT, width=self.BUTTON_WIDTH)
                 
                 self.tictactoe_button = tk.Button(self.tictactoe_button_frame, text="", font=("Helvetica", 30, tk.font.BOLD),\
                                             state=tk.DISABLED, borderwidth=4, bg=COLORS["ButtonBackground"],\
-                                            command=lambda coords=(self.row, self.column): self.gameButtonPressed(coords))
+                                            command=lambda coords=(self.row, self.column): self.game_button_pressed(coords))
                 self.tictactoe_button.grid(sticky="news")
                 
                 self.tictactoe_button_frame.grid(row=self.row, column=self.column, padx=5, pady=5)
@@ -198,7 +200,7 @@ class TicTacToeWindow:
                 self.tictactoe_button_frame.grid_propagate(0)
                 
                 self.gui_game_data[(self.row, self.column)] = (self.tictactoe_button)
-                self.game_data.addGameSpot((self.row, self.column))
+                self.game_data.add_game_spot((self.row, self.column))
         
         self.status_frame = tk.Frame(self.root, height=50)
         self.status_frame.grid(row=(self.row + 1), columnspan=(self.column+1), padx=5, pady=5, sticky="news")
@@ -208,28 +210,32 @@ class TicTacToeWindow:
         
         self.find_first_player_button = tk.Button(self.status_frame, text='Click to roll to see if X or O is first!',\
                                             font=("Helvetica", 13, BOLD), borderwidth=3,\
-                                            command=self.whichPlayerFirst)
+                                            command=self.which_player_first)
         self.find_first_player_button.grid(sticky="news")
     
-    def whichPlayerFirst(self):
-        """Runs TicTacToeGame method that returns 1 for X turn, or -1 for O turn
-        """        
-        [vals.config(state="normal") for keys, vals in self.gui_game_data.items()]
+    def which_player_first(self):
+        """Runs TicTacToeGame method that returns 1 for X turn, or -1 for O turn"""       
+
+        [vals.config(state="normal") for _, vals in self.gui_game_data.items()]
         
         self.find_first_player_button.destroy()
         
-        self.game_data.findFirstPlayer()
+        self.game_data.find_first_player()
 
-        self.setStatusBarInGameWindow()
+        self.set_status_bar_in_game_window()
         
-        self.updateTurn()
+        self.update_turn()
         
-    def gameButtonPressed(self, coords):
-        """Determines which button was pressed, via lambda function tied to button that produces a tuple of coordinates for pressed button.
+    def game_button_pressed(self, coords: tuple):
+        """
+        Determines which button was pressed, via lambda function tied to button that produces a tuple of coordinates for pressed button.
         
         Args:
             coords (tuple): Defined as (row, column), both are integers
         """
+        if self.game_is_over:
+            return
+            
         self.coordinates_of_button = (coords[0], coords[1])
         self.button_pressed = self.gui_game_data[self.coordinates_of_button]
         self.button_pressed.config(state='disabled')
@@ -240,31 +246,33 @@ class TicTacToeWindow:
         else:
             self.button_pressed['background'] = COLORS['OBackground'] 
             
-        self.game_data.updateGameSpot(self.coordinates_of_button)
-        self.game_data.updateTurnCount()
+        self.game_data.update_game_spot(self.coordinates_of_button)
+        self.game_data.update_turn_count()
         
-        if self.game_data.playerCheckForWin(self.coordinates_of_button):
+        if self.game_data.player_check_for_win(self.coordinates_of_button):
             # Check if winner value is equal to current turn's value
-            self.gameOver()
+            self.game_over()
         else:
-            self.game_data.updateTurn()
+            self.game_data.update_turn()
             
-            if self.game_data.getTurnCount() > (self.sizeOfBoard * 2) + 2:
-                if not self.game_data.checkIfWinPossible():
-                    self.gameOver(possible_moves=False)
+            if self.game_data.get_turn_count() > (self.size_of_board * 2) + 2:
+                if not self.game_data.check_if_win_possible():
+                    self.game_over(possible_moves=False)
                     return
             
-            if not self.game_data.checkSpotsAvailable():
-                self.gameOver(GAME_VALS['EMPTY'])
+            if not self.game_data.check_spots_available():
+                self.game_over(GAME_VALS['EMPTY'])
             else:
-                self.updateTurn()
+                self.update_turn()
         
-    def updateTurn(self):
-        """Updates self.current_turn and self.current_turn_label with whoever's turn it is.
+    def update_turn(self):
+        """
+        Updates self.current_turn and self.current_turn_label with whoever's turn it is.
         
         Runs the computer's turn if applicable
         """
-        self.current_turn = self.game_data.getTurn()
+        
+        self.current_turn = self.game_data.get_turn()
         self.current_turn_label = [label for label, value in GAME_VALS.items() if value == self.current_turn]
         
         if self.current_turn == self.player_one_x_or_o.get():
@@ -272,7 +280,7 @@ class TicTacToeWindow:
         elif self.current_turn != self.player_one_x_or_o.get() and self.opponent_option.get() == 1:
             self.status_label['text'] = "Player 2's turn!"
         
-        self.setStatusBarBackgroundColor(self.current_turn)
+        self.set_status_bar_background_color(self.current_turn)
         
         # Let the computer play
         if self.opponent_option.get() == 0:
@@ -281,11 +289,12 @@ class TicTacToeWindow:
                 # Player's turn
                 return
             else:
-                self.computer_chosen_coords = self.game_data.findNextMoveForComputer()
-                self.gameButtonPressed(self.computer_chosen_coords)
+                self.computer_chosen_coords = self.game_data.find_next_move_for_computer()
+                self.game_button_pressed(self.computer_chosen_coords)
       
-    def gameOver(self, who_won=None, possible_moves=True):
-        """Updates the window with who won
+    def game_over(self, who_won=None, possible_moves=True):
+        """
+        Updates the window with who won
 
         Args:
             who_won (integer): Refreshes board with whoever won
@@ -296,7 +305,7 @@ class TicTacToeWindow:
             winning_string = "Tie!"
         elif possible_moves is False:
             winning_string = "No winning moves left. Tie!"
-            if self.sizeOfBoard == 3:
+            if self.size_of_board == 3:
                 self.status_label['font'] = ("Helvetica", 17, BOLD)
         elif not who_won and possible_moves is True:
             if self.current_turn == self.player_one_x_or_o.get():
@@ -309,41 +318,45 @@ class TicTacToeWindow:
         
         self.status_label['text'] = winning_string
         
-        self.play_again = tk.Button(self.root, text="Play Again?", command=self.playAgain)
-        self.play_again.grid(row=(self.row + 2), columnspan = (self.column+1), padx=5, pady=5, sticky="news")
+        self.play_again_button = tk.Button(self.root, text="Play Again?", command=self.play_again)
+        self.play_again_button.grid(row=(self.row + 2), columnspan = (self.column+1), padx=5, pady=5, sticky="news")
+        self.game_is_over = True
     
-    def destroyRootWidgets(self):
-        """Clears all widgets in self.root
-        """
+    def destroy_root_widgets(self):
+        """Clears all widgets in self.root"""
+
         for widgets in self.root.winfo_children():
             widgets.destroy()
     
-    def playAgain(self):
-        """Restarts GUI for a new round of playing
-        """
-        self.destroyRootWidgets()
-        self.root["background"] = self.ORIGINAL_BACKGROUND
-        self.startScreen()
+    def play_again(self):
+        """Restarts GUI for a new round of playing"""
+
+        self.destroy_root_widgets()
+        self.root["background"] = self.original_background
+        self.start_screen()
     
-    def setPlayerOptionInGame(self):
-        """Gets the player option, sets up the game instance up for AI or 2 player game
+    def set_player_option_in_game(self):
+        """
+        Gets the player option, sets up the game instance up for AI or 2 player game
 
         Sets TicTacToeGame.computer_player to:
             True (boolean): True if 1 player game [default is False for two player game]
         """
+
         if self.opponent_option.get() == 0:
             self.game_data.computer_player = True
    
-    def setStatusBarInGameWindow(self):
-        """Sets the status bar in the game window
-        """
+    def set_status_bar_in_game_window(self):
+        """Sets the status bar in the game window"""
+
         self.status_label = tk.Label(self.status_frame, borderwidth=3, relief="groove", font=("Helvetica", 20, BOLD))
         self.status_label.grid(row=0, sticky="news")
         
-        self.setStatusBarBackgroundColor(self.game_data.getTurn())
+        self.set_status_bar_background_color(self.game_data.get_turn())
 
-    def setStatusBarBackgroundColor(self, turn):
-        """Sets the background color of the status label in the game
+    def set_status_bar_background_color(self, turn):
+        """
+        Sets the background color of the status label in the game
 
         Args:
             turn (int): -1 for O's turn, 1 for X's turn
@@ -355,20 +368,21 @@ class TicTacToeWindow:
             self.status_label["bg"] = COLORS['O_LabelBackground']
     
 class TicTacToeGame:
-    """Manages the game data for TicTacToe
-    """
-    def __init__(self, game_size):
-        """Constructor. Starts empty game data dictionary, and initializes turn count.
+    """Manages the game data for TicTacToe"""
+
+    def __init__(self, game_size: int):
+        """
+        Constructor. Starts empty game data dictionary, and initializes turn count.
         
         Args:
             game_size (integer): Assuming square board, length of one side of tictactoe board.
-            comp_player (boolean): True if 1 player, False if 2 player
         """
+
         self.game_data = {}
         self.turn_count = 0
         self.game_size = game_size
         self.computer_player = False
-        self.minimax_count = 0
+
         if self.game_size == 3:
             self.max_minimax_depth = self.game_size ** 2
         elif 4 <= self.game_size <= 7:
@@ -378,41 +392,49 @@ class TicTacToeGame:
         else:
             self.max_minimax_depth = 1
     
-    def setPlayer(self, computer_player):
-        """Setter for player option
+    def set_player(self, computer_player: bool):
+        """
+        Setter for player option
 
         Args:
             computer_player (boolean): True for an AI player, False for 2 player
         """
+
         self.computer_player = computer_player
     
-    def addGameSpot(self, coordinates):
-        """[Appends spot to self.game_data dictionary with key being coordinates of new spot, and value being EMPTY game value]
+    def add_game_spot(self, coordinates: tuple):
+        """
+        Appends spot to self.game_data dictionary with key being coordinates of new spot, and value being EMPTY game value
 
         Args:
             coordinates (tuple): Coordinates of spot to add
         """
+
         self.game_data[coordinates] = GAME_VALS["EMPTY"]
         
-    def updateGameSpot(self, coordinates):
-        """Updates the gamespot with either X's or O's spot
+    def update_game_spot(self, coordinates):
+        """
+        Updates the gamespot with either X's or O's spot
 
         Args:
             coordinates (tuple): Coordinates of spot to update
         """
+
         if self.turn == 1:
             # Was X's turn, update with X's marker
             self.game_data[coordinates] = GAME_VALS["X"]
         else:
             self.game_data[coordinates] = GAME_VALS["O"]
     
-    def checkSpotsAvailable(self, game_board=None):
-        """Checks if cat's game or not by tracking move counts, or checking available moves on gameboard
+    def check_spots_available(self, game_board=None):
+        """
+        Checks if cat's game or not by tracking move counts, or checking available moves on gameboard
         
         Returns:
             True (boolean): if spots available
             False (boolean): if spots not available
         """
+        
         if self.turn_count >= self.game_size ** 2:
             return False
         
@@ -428,7 +450,7 @@ class TicTacToeGame:
         else:
             return False
     
-    def checkIfWinPossible(self):
+    def check_if_win_possible(self):
         """
         Check if a win is even possible - if all rows, columns, and diagonals contain one of each X and O, no wins are possible.
         
@@ -467,66 +489,70 @@ class TicTacToeGame:
         if GAME_VALS['X'] in anti_diag_check and GAME_VALS['O'] in anti_diag_check:
             game_tied_count += 1
             
-        print(f"Game size {self.game_size}, count is {game_tied_count}")
-        
         if game_tied_count >= (self.game_size * 2) + 2:
             return False
         else:
             return True
                
-    def findFirstPlayer(self):
-        """Randomly get first player based on current time being even or odd.
-        """
+    def find_first_player(self):
+        """Randomly get first player based on current time being even or odd"""
+
         if (round(time()) % 2) == 0:
             self.turn = GAME_VALS["X"]
         else:
             self.turn = GAME_VALS["O"]
 
-    def updateTurnCount(self):
-        """Update the turn count for this instance via updating self.turn_count
-        """
+    def update_turn_count(self):
+        """Update the turn count for this instance via updating self.turn_count"""
+
         self.turn_count += 1
         
-    def updateTurn(self):
-        """Update whose turn it is via updating self.turn
-        """
+    def update_turn(self):
+        """Update whose turn it is via updating self.turn"""
+
         if self.turn == GAME_VALS["X"]:
             self.turn = GAME_VALS["O"]
         else:
             self.turn = GAME_VALS["X"]
     
-    def getTurn(self):
-        """Getter for self.turn.
+    def get_turn(self):
+        """
+        Getter for self.turn.
         
         Returns:
             self.turn (integer): 1 for X's turn, -1 for O's turn.
         """
+
         return self.turn
     
-    def getTurnCount(self):
-        """Getter for self.turn_count, number of turns played
+    def get_turn_count(self):
+        """
+        Getter for self.turn_count, number of turns played
         
         Returns:
             self.turn_count (integer): Number of turns played
         """
+
         return self.turn_count
         
-    def computerCheckForWin(self, game_board, score_the_move=False):
-        """Function checks if the backtracking algorithm minimax produced a win, which is based on all possible move sets being run
+    def computer_check_for_win(self, game_board, score_move=False):
+        """
+        Function checks if the backtracking algorithm minimax produced a win, which is based on all possible move sets being run
         
         Args:
             game_board (dict): The game board to check if there is a win
-            score_the_move (boolean) : True if desire to score themove
+            score_move (boolean) : True if desire to score themove
             
         Returns:
             True (boolean): A win
             False (boolean): A loss
             score (tuple) : If asking for a score, returns a tuple with first value being maximizer score (X), second being minimzer score (O)
         """
+
         diag_check = set()
         anti_diag_check = set()
         
-        if score_the_move:
+        if score_move:
             max_depth_score = [0, 0]
         
         for rows in range(self.game_size):
@@ -536,32 +562,32 @@ class TicTacToeGame:
                 rows_check.add(game_board[rows, cols])
                 col_check.add(game_board[cols, rows])
             
-            if self.findAWinner([rows_check, col_check]):
+            if self.find_a_winner([rows_check, col_check]):
                 return True
             
-            if score_the_move:
-                maximizer_score, minimizer_score = self.scoreTheMove([rows_check, col_check])
+            if score_move:
+                maximizer_score, minimizer_score = self.score_the_move([rows_check, col_check])
                 max_depth_score[0] += maximizer_score
                 max_depth_score[1] += minimizer_score
 
             diag_check.add(game_board[rows, rows])
             anti_diag_check.add(game_board[rows, self.game_size-rows-1])
         
-        if self.findAWinner([diag_check, anti_diag_check]):
+        if self.find_a_winner([diag_check, anti_diag_check]):
             return True
         
-        if score_the_move:
-                maximizer_score, minimizer_score = self.scoreTheMove([diag_check, anti_diag_check])
+        if score_move:
+                maximizer_score, minimizer_score = self.score_the_move([diag_check, anti_diag_check])
                 max_depth_score[0] += maximizer_score
                 max_depth_score[1] += minimizer_score
                 
                 return tuple(max_depth_score)
-
-            
+  
         return False
     
-    def scoreTheMove(self, score_checks):
-        """Finds a score by looking at all the rows, columns, and diagonals. If any contain one value and empty, assign a point
+    def score_the_move(self, score_checks):
+        """
+        Finds a score by looking at all the rows, columns, and diagonals. If any contain one value and empty, assign a point
         if it was X (maximizer), and a negative point if it was for O (minimizer).
         
         Args:
@@ -570,8 +596,8 @@ class TicTacToeGame:
         
         Return:
             score (tuple) : Tuple containing max score for X, and min score for O
-        
         """
+
         score = [0, 0]
         for checks in score_checks:
             if len(checks) == 2:
@@ -583,8 +609,9 @@ class TicTacToeGame:
         
         return tuple(score)
     
-    def playerCheckForWin(self, coordinates):
-        """Checks if one of the player's won! Reads in the current instance's gameboard.
+    def player_check_for_win(self, coordinates):
+        """
+        Checks if one of the player's won! Reads in the current instance's gameboard.
         Only checks for diagonal win if coordinates chosen lie on a diagonal.
         Only checks for win after first player has made 3 possible moves
 
@@ -601,7 +628,6 @@ class TicTacToeGame:
             return
 
         else:
-            
             rows_check = set()
             col_check = set()
             diag_check = set()
@@ -610,7 +636,7 @@ class TicTacToeGame:
             row = coordinates[0]
             col = coordinates[1]
             
-            is_diagonal = self.checkIfDiagonal(row, col)
+            is_diagonal = self.check_if_diagonal(row, col)
             
             if is_diagonal:
                 winning_checks = [rows_check, col_check, diag_check, anti_diag_check]
@@ -625,10 +651,11 @@ class TicTacToeGame:
                     diag_check.add(self.game_data[(vals, vals)])
                     anti_diag_check.add(self.game_data[(vals, self.game_size-vals-1)])
                     
-            return self.findAWinner(winning_checks)
+            return self.find_a_winner(winning_checks)
                
-    def checkIfDiagonal(self, row, col):
-        """Checks if the coordinate user chose lie on a diagonal
+    def check_if_diagonal(self, row, col):
+        """
+        Checks if the coordinate user chose lie on a diagonal
 
         Args:
             row (int): Row coordinate of user chosen spot
@@ -638,24 +665,27 @@ class TicTacToeGame:
             True (boolean): If lies on diagonal of board (or anti-diagonal)
             False (boolean): Does not lie on diagonal (or anti-diagonal)
         """
+
         if (row == col) or (row + col == self.game_size - 1):
             return True
         else:
             return False
        
-    def randomMoveSupplier(self):
-        """Provides a random set of coordinates for the computer to choose 
+    def random_move_supplier(self):
+        """
+        Provides a random set of coordinates for the computer to choose 
         
         Return:
-            A tuple of coordinates that are currently unoccupied
+            (tuple): Coordinates that are currently unoccupied
         """
 
         self.empty_spots = [coords for coords, vals in self.game_data.items() if vals == GAME_VALS["EMPTY"]]
         
         return random.choice(self.empty_spots)
 
-    def findAWinner(self, winner_checks):
-        """Finds a winner from a set of given checks, checks being the values listed in a row, column, diagonal, or anti-diagonal
+    def find_a_winner(self, winner_checks):
+        """
+        Finds a winner from a set of given checks, checks being the values listed in a row, column, diagonal, or anti-diagonal
         from the game board.
         
         Args:
@@ -665,10 +695,9 @@ class TicTacToeGame:
         
         Return:
             True (boolean) : There was a winner
-            
             False (boolean) : There was no winner
-        
         """
+
         for checks in winner_checks:
             if len(checks) == 1:
                 if GAME_VALS['EMPTY'] not in checks:
@@ -676,7 +705,7 @@ class TicTacToeGame:
         
         return False
     
-    def findNextMoveForComputer(self):
+    def find_next_move_for_computer(self):
         """Function runs each possible move available through MINIMAX algorithm to determine a score for the next move.
 
         Returns:
@@ -684,10 +713,10 @@ class TicTacToeGame:
         """
         if self.game_size == 4:
             if self.turn_count <= 3:
-                return self.randomMoveSupplier()
+                return self.random_move_supplier()
         elif self.game_size > 4:
             if self.turn_count <= (self.game_size):
-                return self.randomMoveSupplier()
+                return self.random_move_supplier()
         
         available_moves = [coordinates for coordinates, value in self.game_data.items() if value == GAME_VALS["EMPTY"]]
         
@@ -696,21 +725,22 @@ class TicTacToeGame:
         alpha = -1000000
         beta = 1000000
         
-        possible_final_moves = {}
+        self.possible_final_moves = {}
         gameboard_for_next_move = self.game_data
         for moves in available_moves:
             gameboard_for_next_move[moves] = self.turn
             # _ is returned turn count from minimax, and is ignored
-            score_for_this_turn, _ = self.minimaxScoreThisTurn(self.turn * -1, gameboard_for_next_move, 0, alpha, beta, self.max_minimax_depth)
-            possible_final_moves[moves] = score_for_this_turn
+            score_for_this_turn, _ = self.minimax_score_this_turn(self.turn * -1, gameboard_for_next_move, 0, alpha, beta)
+            self.possible_final_moves[moves] = score_for_this_turn
             gameboard_for_next_move[moves] = GAME_VALS["EMPTY"]
             
         print(f"It took {self.minimax_count} iterations to get a move.")
                 
-        return self.findBestTurn(possible_final_moves)
+        return self.find_best_turn(self.possible_final_moves)
 
-    def minimaxScoreThisTurn(self, whose_turn, game_board, turn_count, alpha, beta, max_depth):
-        """Implements minimax algorithm, reads in a TicTacToe gameboard, performs algorithm to find potential best move
+    def minimax_score_this_turn(self, whose_turn, game_board, turn_count, alpha, beta):
+        """
+        Implements minimax algorithm, reads in a TicTacToe gameboard, performs algorithm to find potential best move
         This involves determining whether best move is offensive or defensive
         It creates a 'game tree', with each branch being a different possible game option
         It scores each tree based on its final state, per the score key below
@@ -722,36 +752,35 @@ class TicTacToeGame:
         Subtract # of turns to X score
         
         Args:
-            whose_turn (int) : -1 for O's turn, 1 for X's turn
-            game_board (dict) : Keys = coordinates of spots, vals are -1 if O spot, 0 if EMPTY, 1 if X spot
-            turn_count (int) : Initialized at 0, counts the # of turns needed for a win in order to find optimal move
-            alpha (int) : Equivalent to negative infinity, starts low and is used as comparison in max evaluation
-            beta (int) : Equivalent to positive infinity, starts high and is used as compariso in min evaluation
-            max_depth (int) : Max depth is the max number of turn the computer can search for
+            whose_turn (int): -1 for O's turn, 1 for X's turn
+            game_board (dict): Keys = coordinates of spots, vals are -1 if O spot, 0 if EMPTY, 1 if X spot
+            turn_count (int): Initialized at 0, counts the # of turns needed for a win in order to find optimal move
+            alpha (int): Begins at negative infinity, starts low and is used as comparison in max evaluation
+            beta (int): Begings at positive infinity, starts high and is used as comparison in min evaluation
         """
+
         self.minimax_count += 1
         
-
         if whose_turn == GAME_VALS["X"]:
-            best = -10000
+            best = float('-inf')
         else:
-            best = 10000
+            best = float('inf')
         
-        if self.computerCheckForWin(game_board):
+        if self.computer_check_for_win(game_board):
             if whose_turn == GAME_VALS["X"]:
                 return -10, turn_count
             else:
                 return 10, turn_count
 
-        if turn_count > max_depth:
+        if turn_count > self.max_minimax_depth:
             # Insert heuristic here to give some points depending on situation of the board
-            max_depth_score = self.computerCheckForWin(game_board, True)
+            max_depth_score = self.computer_check_for_win(game_board, True)
             if whose_turn == GAME_VALS["X"]:
                 return max_depth_score[0], turn_count
             else:
                 return max_depth_score[1], turn_count
             
-        if not self.checkSpotsAvailable(game_board):
+        if not self.check_spots_available(game_board):
             return 0, turn_count
                 
         available_spaces = [coords for coords, vals in game_board.items() if vals == 0]
@@ -759,7 +788,7 @@ class TicTacToeGame:
         turns = {}
         for space in available_spaces:
             game_board[space] = whose_turn
-            final_score, final_turn_count = self.minimaxScoreThisTurn(whose_turn * -1, game_board, turn_count + 1, alpha, beta, self.max_minimax_depth)
+            final_score, final_turn_count = self.minimax_score_this_turn(whose_turn * -1, game_board, turn_count + 1, alpha, beta)
 
             scores[space] = final_score
             turns[space] = final_turn_count
@@ -776,14 +805,14 @@ class TicTacToeGame:
                 if beta <= alpha:
                     break
             
-            
         if whose_turn == GAME_VALS["O"]:
             return min(scores.values()) + min(turns.values()), min(turns.values())
         else:
             return max(scores.values()) - min(turns.values()), min(turns.values())
 
-    def findBestTurn(self, next_moves):
-        """Given a list of best possible turns, find the best possible turn in the shortest amount of turn. 
+    def find_best_turn(self, next_moves):
+        """
+        Given a list of best possible turns, find the best possible turn in the shortest amount of turn. 
         Since move count is included in the score, this will just need to maximize score for X, and minimize for O.
         If multiple turns have the same score, it randomly chooses one.
 
@@ -807,8 +836,8 @@ class TicTacToeGame:
         else:
             return random.choice(final_moves)
         
-    def _displayGameBoard(self, game_size, game_board):
-    
+    def _display_game_board(self, game_size, game_board):
+        print()
         for rows in range(game_size):
             for cols in range(game_size):
                 value = [turn for turn, val in GAME_VALS.items() if val == game_board[(rows, cols)]]
@@ -817,8 +846,6 @@ class TicTacToeGame:
                 print(value, end=" ")
             print("")
         coordinates = [coords for coords, values in game_board.items()]
-
-            
 
 if __name__ == "__main__":
     root = tk.Tk()

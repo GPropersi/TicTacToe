@@ -200,8 +200,9 @@ GAME_VALS = {
 }
 
 
-def minimaxScoreThisTurn(whose_turn, game_board, turn_count):
-    """Implements minimax algorithm, reads in a TicTacToe gameboard, performs algorithm to find potential best move
+def minimax_score_this_turn(whose_turn, game_board, turn_count):
+    """
+    Implements minimax algorithm, reads in a TicTacToe gameboard, performs algorithm to find potential best move
     This involves determining whether best move is offensive or defensive
     It creates a 'game tree', with each branch being a different possible game option
     Scores assigned for gameboard positions:
@@ -217,13 +218,13 @@ def minimaxScoreThisTurn(whose_turn, game_board, turn_count):
         turn_count (int) : Initialized at 0, counts the # of turns needed for a win in order to find optimal move
     """
 
-    if computerCheckForWin(3, game_board):
+    if computer_check_for_win(3, game_board):
         if whose_turn == GAME_VALS["X"]:
             return -10, turn_count
         else:
             return 10, turn_count
         
-    if not getAvailableSpaces(game_board):
+    if not get_available_spaces(game_board):
         return 0, turn_count
     
     available_spaces = [coords for coords, vals in game_board.items() if vals == 0]
@@ -231,7 +232,7 @@ def minimaxScoreThisTurn(whose_turn, game_board, turn_count):
     turns = {}
     for space in available_spaces:
         game_board[space] = whose_turn
-        final_score, final_turn_count = minimaxThisTurn(whose_turn * -1, game_board, turn_count + 1)
+        final_score, final_turn_count = minimax_score_this_turn(whose_turn * -1, game_board, turn_count + 1)
         scores[space] = final_score
         turns[space] = final_turn_count
         game_board[space] = 0
@@ -241,8 +242,9 @@ def minimaxScoreThisTurn(whose_turn, game_board, turn_count):
     else:
         return max(scores.values()) - min(turns.values()), min(turns.values())
 
-def findNextMove(game_board, whose_turn):
-    """Function runs each possible move available through MINIMAX algorithm to determine a score for the next move.
+def find_next_move(game_board, whose_turn):
+    """
+    Function runs each possible move available through MINIMAX algorithm to determine a score for the next move.
 
     Args:
         game_board (dict): Keys = coordinates of spots, vals are -1 if O spot, 0 if EMPTY, 1 if X spot
@@ -251,20 +253,22 @@ def findNextMove(game_board, whose_turn):
     Returns:
         [tuple]: Coordinates of best available next move
     """
+
     available_moves = [coordinates for coordinates, value in game_board.items() if value == GAME_VALS["EMPTY"]]
     
     possible_final_moves = {}
     gameboard_for_next_move = game_board.copy()
     for moves in available_moves:
         gameboard_for_next_move[moves] = whose_turn
-        score_for_this_turn, numb_of_turns = minimaxScoreThisTurn(whose_turn * -1, gameboard_for_next_move, 0)
+        score_for_this_turn, numb_of_turns = minimax_score_this_turn(whose_turn * -1, gameboard_for_next_move, 0)
         possible_final_moves[moves] = (score_for_this_turn, numb_of_turns)
         gameboard_for_next_move[moves] = 0
             
-    return findBestTurn(possible_final_moves, whose_turn)
+    return find_best_turn(possible_final_moves, whose_turn)
 
-def findBestTurn(next_moves, whose_turn):
-    """Given a list of best possible turns, find the best possible turn in the shortest amount of turn
+def find_best_turn(next_moves, whose_turn):
+    """
+    Given a list of best possible turns, find the best possible turn in the shortest amount of turn
 
     Args:
         next_moves (dict): Keys are next available moves, values are a tuple of (score, minimum move to win/loss)
@@ -300,42 +304,45 @@ def findBestTurn(next_moves, whose_turn):
     
     return final_coordinates
             
-def computerCheckForWin(game_size, game_board):
-        """Function checks if the backtracking algorithm minimax produced a win, which is based on all possible move sets being run
+def computer_check_for_win(game_size, game_board):
+    """
+    Function checks if the backtracking algorithm minimax produced a win, which is based on all possible move sets being run
+    
+    Args:
+        game_size (int) : For minimax testing only, the size of one length of gameboard
+        game_board (dict): The game board, with turns being added via minimax algorithm
         
-        Args:
-            game_size (int) : For minimax testing only, the size of one length of gameboard
-            game_board (dict): The game board, with turns being added via minimax algorithm
-            
-            
-        Returns:
-            True (boolean): A win
-            False (boolean): A loss
-        """
-        diag_check = set()
-        anti_diag_check = set()
-
-        for rows in range(game_size):
-            rows_check = set()
-            col_check = set()
-            for cols in range(game_size):
-                rows_check.add(game_board[rows, cols])
-                col_check.add(game_board[cols, rows])
-                
-            if findAWinner([rows_check, col_check]):
-                return True
-
-            diag_check.add(game_board[rows, rows])
-            anti_diag_check.add(game_board[rows, game_size-rows-1])
         
-        if findAWinner([diag_check, anti_diag_check]):
+    Returns:
+        True (boolean): A win
+        False (boolean): A loss
+    """
+
+    diag_check = set()
+    anti_diag_check = set()
+
+    for rows in range(game_size):
+        rows_check = set()
+        col_check = set()
+        for cols in range(game_size):
+            rows_check.add(game_board[rows, cols])
+            col_check.add(game_board[cols, rows])
+            
+        if find_a_winner([rows_check, col_check]):
             return True
-            
-        
-        return False
 
-def checkIfDiagonal(row, col, game_size):
-    """Checks if the coordinate user chose lie on a diagonal
+        diag_check.add(game_board[rows, rows])
+        anti_diag_check.add(game_board[rows, game_size-rows-1])
+    
+    if find_a_winner([diag_check, anti_diag_check]):
+        return True
+        
+    
+    return False
+
+def check_if_diagonal(row, col, game_size):
+    """
+    Checks if the coordinate user chose lie on a diagonal
 
     Args:
         row (int): Row coordinate of user chosen spot
@@ -346,13 +353,15 @@ def checkIfDiagonal(row, col, game_size):
         True (boolean): If lies on diagonal of board
         False (boolean): Does not lie on diagonal
     """
+
     if (row == col) or (row + col == game_size - 1):
         return True
     else:
         return False
 
-def getAvailableSpaces(game_board):
-    """Finds if there are available spaces left on the gameboard
+def get_available_spaces(game_board):
+    """
+    Finds if there are available spaces left on the gameboard
 
     Args:
         game_board (dict): Keys are coordinates, values are -1 for O, 1 for X, 0 for empty
@@ -367,8 +376,9 @@ def getAvailableSpaces(game_board):
     else:
         return False 
 
-def findAWinner(winner_checks):
-    """Finds a winner from a set of given checks, checks being a win from a row, column, diagonal, or anti-diagonal
+def find_a_winner(winner_checks):
+    """
+    Finds a winner from a set of given checks, checks being a win from a row, column, diagonal, or anti-diagonal
     
     Args:
         winner_checks (list) : A list of sets, 1 for each required
@@ -380,6 +390,7 @@ def findAWinner(winner_checks):
         False (boolean) : There was no winner
     
     """
+    
     for checks in winner_checks:
         if len(checks) == 1:
             if 0 not in checks:
@@ -403,7 +414,7 @@ if __name__ == "__main__":
         try:
             test_case_to_run = int(input("Which test case: "))
             player = GAME_VALS[input("Which player: ")]
-            next_move = findNextMove(TEST_CASES[test_case_to_run], player)
+            next_move = find_next_move(TEST_CASES[test_case_to_run], player)
             print(f"Best move is {next_move}")
             TEST_CASES[test_case_to_run][next_move] = player
             displayGameBoard(3, TEST_CASES[test_case_to_run])
